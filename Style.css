@@ -1,0 +1,200 @@
+catalog
+{
+background-color: #070707;
+width: 100%;
+}
+book
+{
+display: block;
+margin-bottom: 30pt;
+color: #ffffff;
+margin-left: 10pt;
+}
+title
+{
+color: #eb0000;
+font-size: 20pt;
+}
+author
+{
+color: #d15cff;
+display: block;
+font-size: 20pt;
+}	
+genre
+{
+display: block;
+color: #3efafa;
+margin-left: 15pt;
+font-size: 15pt;
+}
+price
+{
+display: block;
+color: #24ff99;
+margin-left: 15pt;
+font-size: 15pt;
+}
+publish_date
+{
+display: block;
+color: #bfff59;
+margin-left: 15pt;
+font-size: 15pt;
+}
+
+
+/* опишем базовый стиль кнопки калькулятора */
+.my-btn { 
+	margin-right: 5px;           /* задаем отступ от кнопки справа */
+	margin-top: 5px;             /* задаем отступ от кнопки сверху*/
+	width: 50px;                 /* задаем ширину кнопки */
+	height: 50px;                /* задаем высоту кнопки */
+	border-radius: 50%;          /* округляем кнопку */
+	border: none;                /* отключаем обводку */
+	background: #515151;         /* задаем серый цвет кнопки */
+	color: white;                /* задаем белый цвет текста внутри кнопки */
+	font-size: 1.5rem;           /* увеличим размер шрифта */
+	font-family: Arial, Helvetica, sans-serif; /* сменим шрифт */
+	cursor: pointer;             /* при наведении на кнопку курсор будет изменен
+									со стрелки на 'указательный палец' */
+	user-select: none;           /* отключаем возможность выделить текст внутри кнопки */
+  } 
+  
+  /* hover - это состояние элемента, когда на него наведен курсор */
+  .my-btn:hover {
+	background: darkgray; /* при наведение курсора на кнопку, она будет окрашена в серый */
+  }
+
+  .my-btn.my-btn.primary:hover {
+	background: rgb(235, 231, 5);
+  }
+  
+  /* active - это состояние активации элемента. В случае кнопки - нажатие на нее */
+  .my-btn:active {
+	filter: brightness(130%); /* увеличим интенсивность цвета для эффекта вспышки */
+  }
+  
+  /* селектор для кнопок первостепенных операций */
+  .my-btn.primary { 
+	background: #ff9801; /* цвет кнопки оранжевый */
+  }
+  
+  /* селектор для кнопок второстепенных операций */
+  .my-btn.secondary { 
+	background: #a6a6a6; /* цвет кнопки сервый */
+  }
+  
+  /* селектор для кнопки расчета выражения (=) */
+  .my-btn.execute { 
+	width: 50px;          /* сделаем кнопку шире других */
+	border-radius: 34px;   /* подкорректируем округлость */
+  }
+  .my-btn.execute:hover {
+	color: #eb0000;
+  }
+  
+  /* селектор для поля вывода результата */
+  .result { 
+	width: 220px;
+	height: 50px;
+	margin-bottom: 15px;         /* отступ снизу */
+	padding-right: 10px;         /* выступ справа */
+	background: rgb(73, 73, 73); /* цвет можно задавать и таким образом */
+	text-align: right;           /* примагнитим текст к правой стороне */
+	color: #ffffff;              /* цвет текста белый */
+	font-size: 1.5rem;
+	font-family: Arial, Helvetica, sans-serif;
+  }
+
+.navbar {
+    background: linear-gradient(-45deg,#003596,#003596,#003596,#003596)
+}
+.navbar {
+    --bs-navbar-padding-x: 0;
+    --bs-navbar-padding-y: .5rem;
+    --bs-navbar-color: rgba(var(--bs-emphasis-color-rgb), .65);
+    --bs-navbar-hover-color: rgba(var(--bs-emphasis-color-rgb), .8);
+    --bs-navbar-disabled-color: rgba(var(--bs-emphasis-color-rgb), .3);
+    --bs-navbar-active-color: rgba(var(--bs-emphasis-color-rgb), 1);
+    --bs-navbar-brand-padding-y: .3125rem;
+    --bs-navbar-brand-margin-end: 1rem;
+    --bs-navbar-brand-font-size: 1.25rem;
+    --bs-navbar-brand-color: rgba(var(--bs-emphasis-color-rgb), 1);
+    --bs-navbar-brand-hover-color: rgba(var(--bs-emphasis-color-rgb), 1);
+    --bs-navbar-nav-link-padding-x: .5rem;
+    --bs-navbar-toggler-padding-y: .25rem;
+    --bs-navbar-toggler-padding-x: .75rem;
+    --bs-navbar-toggler-font-size: 1.25rem;
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    --bs-navbar-toggler-border-color: rgba(var(--bs-emphasis-color-rgb), .15);
+    --bs-navbar-toggler-border-radius: var(--bs-border-radius);
+    --bs-navbar-toggler-focus-width: .25rem;
+    --bs-navbar-toggler-transition: box-shadow .15s ease-in-out;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--bs-navbar-padding-y) var(--bs-navbar-padding-x)
+}
+.navbar-expand {
+    flex-wrap: nowrap;
+    justify-content: flex-start
+}
+
+.navbar-expand .navbar-nav {
+    flex-direction: row
+}
+
+.navbar-expand .navbar-nav .dropdown-menu {
+    position: absolute
+}
+
+.navbar-expand .navbar-nav .nav-link {
+    padding-right: var(--bs-navbar-nav-link-padding-x);
+    padding-left: var(--bs-navbar-nav-link-padding-x)
+}
+
+.navbar-expand .navbar-nav-scroll {
+    overflow: visible
+}
+
+.navbar-expand .navbar-collapse {
+    display: flex!important;
+    flex-basis: auto
+}
+
+.navbar-expand .navbar-toggler {
+    display: none
+}
+
+.navbar-expand .offcanvas {
+    position: static;
+    z-index: auto;
+    flex-grow: 1;
+    width: auto!important;
+    height: auto!important;
+    visibility: visible!important;
+    background-color: transparent!important;
+    border: 0!important;
+    transform: none!important;
+    transition: none
+}
+
+.navbar-expand .offcanvas .offcanvas-header {
+    display: none
+}
+
+.navbar-expand .offcanvas .offcanvas-body {
+    display: flex;
+    flex-grow: 0;
+    padding: 0;
+    overflow-y: visible
+}
+
+.ms-auto {
+    margin-left: auto!important
+}
+
+

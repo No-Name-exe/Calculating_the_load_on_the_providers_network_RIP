@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	{% load static %}
+<head>
+	<title>{% block title %}Провайдер{% endblock %}</title>
+	<link rel="stylesheet" type="text/css" href="{% static 'css/Style.css' %}">
+</head>
+{% with DatabaseAdress="http://192.168.1.31:9000/cloud/" %}
+<body>
+	<header class="head">
+		<nav class="navbar navbar-expand">
+			<div class="container"><a class="" href="/">
+				{% comment %} <picture><source  srcset={% static "images/router-svgrepo-com.svg"%} /><img alt="" src={%static "images/v14_1672.png"%} width="52" height="44" class=""> </a></picture> {% endcomment %}
+				<object data="{{DatabaseAdress}}router-svgrepo-com.svg" type="image/png" class="icon">
+					<img src={% static "images/router-svgrepo-com.svg"%} class="icon" />
+				   </object></a>
+			</div>
+		</nav>
+	</header>
+{% endwith %}
+{% block main%} {% endblock %}

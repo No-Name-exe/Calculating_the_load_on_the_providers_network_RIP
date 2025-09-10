@@ -1,0 +1,34 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Python Debugger: Django",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}\\lab1\\manage.py",
+			"args": ["runserver", "8080"],
+			"django": true,
+			"justMyCode": true
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "no CORS",
+			"file": "${relativeFile}",
+			"runtimeArgs": [
+				"--disable-web-security"
+			]
+		},
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Site",
+			"file": "Site.html",
+			"runtimeArgs": [
+				"--disable-web-security"
+			]
+		},
+	],
+	"compounds": [
+	]
+}

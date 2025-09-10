@@ -1,0 +1,17 @@
+{% extends 'site.html' %}
+{% load static %}
+
+
+{% block number %}{{ ListOfApplic.0.ListRouter|length }} {% endblock %}
+{% block content %}
+    {% with DatabaseAdress="http://192.168.1.31:9000/cloud/" %}
+    {% for order in data.routers %}
+        <span class="block"><a href="{% url 'router_url' order.id %}" class="list"><object class="image" data={{DatabaseAdress|add:order.img}} type="image/png" width="104" height="88" ><img class="image"  src={% static "images/cont/"|add:order.img %} width="104" height="88" /></object> <span class="title">{{ order.title }}</span><span class="desc"> {{ order.desc }}</span></a></span>
+    {% empty %}
+        Список пуст
+    {% endfor %}
+    {% endwith %}
+{% endblock %}
+
+
+{% comment %} <img alt="" src={% static "images/cont/"|add:order.img %} width="104" height="88" class=""> {% endcomment %}

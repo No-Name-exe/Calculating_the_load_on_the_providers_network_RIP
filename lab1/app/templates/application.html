@@ -1,0 +1,20 @@
+{% extends 'head.html' %}
+
+{% block title %}Заявка №{{ id }}{% endblock %}
+
+{% block main %}
+{% with DatabaseAdress="http://192.168.1.31:9000/cloud/" %}
+    <h3 class="bigtitle">Расчет нагрузки</h3>
+    <div class="content">
+        <div class="grid">
+            <input name="Date" type="text" class="text-input" placeholder="Дата" value="{{Date}}">
+            <input name="Price" type="text" class="text-input" placeholder="Стоимость содержания" value="{{Price}}">
+        </div>
+        {% for order in data.routers %}
+        <span class="block-deep"><span class="number">Роутер №{{ order.id }}</span><a href="{% url 'router_url' order.id %}" class="list"><img class="image"  src="{{DatabaseAdress}}{{order.img}}" width="104" height="88" /><span class="title">{{ order.title }}</span></a><span class="desc-deep"> {{ order.desc }}</span><input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value="{{Master}}"></span>
+        {% empty %}
+            Список пуст
+        {% endfor %}
+    </div>
+{% endwith %}
+{% endblock %}  
