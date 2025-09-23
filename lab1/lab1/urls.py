@@ -20,9 +20,7 @@ from app import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-	path('', views.GetRouters),
-	path('sendSearch', views.sendSearch, name='sendText'),
+	path('', views.GetRouters, name='sendSearch'),
 	path('router/<int:id>/', views.GetRouter, name='router_url'),
-	path('application', views.GetApplication, {"id":3}, name='application_url'),
-	path('application/<int:id>', views.GetApplication, name='application_url_specific'),
+	path('application/<int:id>', views.GetApplicationRouter, name='application_router_url'),
 ]

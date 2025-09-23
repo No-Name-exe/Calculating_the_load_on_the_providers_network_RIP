@@ -242,6 +242,12 @@
   top: -100px;
 }
 
+.text-load{
+  position: relative;
+  right: -724px;
+  top: -27px;
+}
+
 .Deeper{
   border-radius: 4px;
   border-color: #767676;

@@ -2,13 +2,13 @@
 
 {% load static %}
 {% block main %}
-{% with DatabaseAdress="http://192.168.1.31:9000/cloud/" %}
-	<div class="requests"><span class="circle"><span class="requests_number">{% block number %}{% endblock %}</span></span><a class="Link" href="{% url 'application_url' %}"><img src="{{DatabaseAdress}}list.svg" class="requests" /></a></div>
+{% with DatabaseAdress="http://172.21.19.202:9000/cloud/" %}
+	<div class="requests"><span class="circle"><span class="requests_number">{% block number %}{% endblock %}</span></span><a class="Link" href="{% url 'application_router_url' id=default.application.id  %}"><img src="{{DatabaseAdress}}list.svg" class="requests" /></a></div>
 {% endwith %}
 	<h2 class="bigtitle">Cписок маршрутизаторов</h2>
 
 	<div class="grid" style="margin-top: 40px;">
-		<form action="sendSearch" method="post" enctype="multipart/form-data" class="">{% csrf_token %}
+		<form action="{% url 'sendSearch' %}" method="post" enctype="multipart/form-data" class="">{% csrf_token %}
 			<div class="text-input">
 				<input name="search" type="text" class="text-input" placeholder="Поиск Маршутизатора" value="{{data.req}}">
 				<button type="submit" value="" class="search"><img src="{% static 'images/magnifier.svg' %}" alt="Поиск" width="20px" height="20px"/></button>
