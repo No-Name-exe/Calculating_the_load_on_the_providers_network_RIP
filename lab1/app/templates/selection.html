@@ -2,11 +2,17 @@
 {% load static %}
 
 
-{% block number %}{{ ListOfApplic.0.ListRouter|length }} {% endblock %}
+{% block number %}{{ ListRouter|length }} {% endblock %}
 {% block content %}
-    {% with DatabaseAdress="http://192.168.1.31:9000/cloud/" %}
-    {% for order in data.routers %}
-        <span class="block"><a href="{% url 'router_url' order.id %}" class="list"><object class="image" data={{DatabaseAdress|add:order.img}} type="image/png" width="104" height="88" ><img class="image"  src={% static "images/cont/"|add:order.img %} width="104" height="88" /></object> <span class="title">{{ order.title }}</span><span class="desc"> {{ order.desc }}</span></a></span>
+    {% with DatabaseAdress="http://172.21.19.202:9000/cloud/" %}
+    {% for RouterData in data.routers %}
+        <span class="block"><a href="{% url 'router_url' RouterData.id %}" class="list"><object class="image" data={{DatabaseAdress|add:RouterData.img}} type="image/png" width="104" height="88" ><img class="image"  src={% static "images/cont/"|add:RouterData.img %} width="104" height="88" /></object> <span class="title">{{ RouterData.title }}</span><span class="desc"> {{ RouterData.desc }}</span></a>
+        <form method="post" action="{% url 'router_add' RouterData.id %}">
+        {% csrf_token %}
+            <input type="hidden" name="router_id" value={{ RouterData.id }} class="Deeper">
+            <input name="addRouter" type="submit" value="Добавить" class="Deeper">
+        </form>
+        </span>
     {% empty %}
         Список пуст
     {% endfor %}

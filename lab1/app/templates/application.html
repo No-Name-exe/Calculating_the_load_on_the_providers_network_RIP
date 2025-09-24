@@ -6,17 +6,36 @@
 {% with DatabaseAdress="http://172.21.19.202:9000/cloud/" %}
     <h3 class="bigtitle">Расчет нагрузки</h3>
     <div class="content">
+        <form method="post" action="{% url 'application_router_delete' id %}">
+        {% csrf_token %}
+            <input type="hidden" name="application_id" value={{ id }} class="">
+            <input name="DeleteApplicationRouter" type="submit" value="Удалить заявку" class="Delete">
+        </form>
         <div class="grid">
-            <input name="Date" type="text" class="text-input" placeholder="Адрес" value="{{address}}">
-            <input name="Price" type="text" class="text-input" placeholder="Количество пользователей" value="{{total_users}}">
+            <form method="post" action="{% url 'router_add' id %}">
+            {% csrf_token %}
+                <input name="Adress" type="text" class="text-input" placeholder="Адрес" value="{{address}}">
+                <input name="TotalUsers" type="text" class="text-input" placeholder="Количество пользователей" value="{{total_users}}">
+                <input name="addApplication" type="submit" value="Добавить" class="Adder">
+                <input type="hidden" name="application_id" value={{ id }} class="">
+                <input type="hidden" name="update_app" value={{ True }} class="">
+            </form>
         </div>
         {% for order in data.routers %}
         <span class="block-deep"><span class="number">Роутер №{{ order.id }}</span><a href="{% url 'router_url' order.id %}" class="list"><img class="image"  src="{{DatabaseAdress}}{{order.img}}" width="104" height="88" /><span class="title">{{ order.title }}</span></a><span class="desc-deep"> {{ order.desc }}</span>
         {% for router_info in ListRouter %}
-            {% if router_info.id == order.id %}    
+        {% if router_info.id == order.id %}
+            <form method="post" action="{% url 'router_add' id %}">
+                {% csrf_token %}
                 <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if router_info.master == None %}""{% else %}"{{router_info.master}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ router_info.load }}">
+                <input name="addRouter" type="submit" value="Обновить" class="AdderRouter">
+                <input type="hidden" name="application_id" value={{ id }} class="">
+                <input type="hidden" name="router_id" value={{ router_info.id }} class="">
+                <input type="hidden" name="update_router" value={{ True }} class="">
+            </form>
             {% endif %}
-        {% endfor %}    
+        {% endfor %}
+        {% comment %} <button type="submit" value="Удалить" class="search"></button> {% endcomment %}
         </span>
         {% empty %}
             Список пуст

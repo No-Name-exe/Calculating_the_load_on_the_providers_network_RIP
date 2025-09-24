@@ -245,7 +245,7 @@
 .text-load{
   position: relative;
   right: -724px;
-  top: -27px;
+  top: -50px;
 }
 
 .Deeper{
@@ -256,6 +256,36 @@
   position: relative;
   right: -185px;
   top: -90px;
+}
+
+.Delete{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -35px;
+  top: 10px;
+}
+
+.Adder{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -35px;
+  top: 0px;
+}
+
+.AdderRouter{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -550px;
+  top: -10px;
 }
 
 .Deeper:hover{

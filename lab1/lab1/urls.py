@@ -23,4 +23,6 @@ urlpatterns = [
 	path('', views.GetRouters, name='sendSearch'),
 	path('router/<int:id>/', views.GetRouter, name='router_url'),
 	path('application/<int:id>', views.GetApplicationRouter, name='application_router_url'),
+    path('addrouter/<int:id>/', views.AddRouterDatabase, name='router_add'),
+	path('application_router_delete/<int:id>', views.DeleteStatusApplicationRouterDatabase, name='application_router_delete'),
 ]
