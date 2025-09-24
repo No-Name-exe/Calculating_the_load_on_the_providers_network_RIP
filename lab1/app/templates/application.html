@@ -3,7 +3,7 @@
 {% block title %}Заявка №{{ id }}{% endblock %}
 
 {% block main %}
-{% with DatabaseAdress="http://172.21.19.202:9000/cloud/" %}
+{% with DatabaseAdress="http://172.21.19.40:9000/cloud/" %}
     <h3 class="bigtitle">Расчет нагрузки</h3>
     <div class="content">
         <form method="post" action="{% url 'application_router_delete' id %}">
@@ -22,19 +22,19 @@
             </form>
         </div>
         {% for order in data.routers %}
-        <span class="block-deep"><span class="number">Роутер №{{ order.id }}</span><a href="{% url 'router_url' order.id %}" class="list"><img class="image"  src="{{DatabaseAdress}}{{order.img}}" width="104" height="88" /><span class="title">{{ order.title }}</span></a><span class="desc-deep"> {{ order.desc }}</span>
-        {% for router_info in ListRouter %}
-        {% if router_info.id == order.id %}
+        <span class="block-deep"><span class="number">Роутер №{{ order.id_router.id }}</span><a href="{% url 'router_url' order.id_router.id %}" class="list"><img class="image"  src="{{DatabaseAdress}}{{order.id_router.img}}" width="104" height="88" /><span class="title">{{ order.id_router.title }}</span></a><span class="desc-deep"> {{ order.id_router.desc }}</span>
+        {% comment %} {% for router_info in ListRouter %} {% endcomment %}
+        {% comment %} {% if router_info.id == order.id_router.id %} {% endcomment %}
             <form method="post" action="{% url 'router_add' id %}">
                 {% csrf_token %}
-                <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if router_info.master == None %}""{% else %}"{{router_info.master}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ router_info.load }}">
+                <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if order.master_router_id == None %}""{% else %}"{{order.master_router_id}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ order.router_load }}">
                 <input name="addRouter" type="submit" value="Обновить" class="AdderRouter">
                 <input type="hidden" name="application_id" value={{ id }} class="">
-                <input type="hidden" name="router_id" value={{ router_info.id }} class="">
+                <input type="hidden" name="router_id" value={{ order.id_router.id }} class="">
                 <input type="hidden" name="update_router" value={{ True }} class="">
             </form>
-            {% endif %}
-        {% endfor %}
+            {% comment %} {% endif %} {% endcomment %}
+        {% comment %} {% endfor %} {% endcomment %}
         {% comment %} <button type="submit" value="Удалить" class="search"></button> {% endcomment %}
         </span>
         {% empty %}
