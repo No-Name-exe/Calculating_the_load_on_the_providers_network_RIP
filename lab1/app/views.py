@@ -64,6 +64,8 @@ def GetRouters(request, application_routers_id=defaul_application_id):
 	else:
 		final=Router.objects.all()
 	context.update({'data' : {'routers': final}})
+	# if input_text is not None:
+	# 	context.update({'data' : {'req': input_text}})
 	return render(request, 'selection.html', context)
 
 def GetRouter(request, id):
@@ -134,6 +136,7 @@ def AddRouterDatabase(request, id):
 
 def DeleteStatusApplicationRouterDatabase(request, id):
 	target = request.POST.get("application_id")
+	Application.objects.update(date_end=datetime.now().date())
 	print(target)
 	with connection.cursor() as cursor:
 		cursor.execute("UPDATE Application SET status = 'удалено' WHERE id = %s", [id])
