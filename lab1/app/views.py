@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import Router, Application, AddedRouter
+from .models import Router, ApplicationRouter, AddedRouter
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from datetime import datetime
 from django.db import connection
@@ -50,7 +50,7 @@ defaul_application_id=3
 
 def GetRouters(request, application_routers_id=defaul_application_id):
 	context = {}
-	context.update({'ListOfApplic': Application.objects.get(id=application_routers_id)})    # добавляем ключи из Application
+	context.update({'ListOfApplic': ApplicationRouter.objects.get(id=application_routers_id)})    # добавляем ключи из Application
 	context.update({'ListRouter': AddedRouter.objects.filter(id_application=application_routers_id)})    # добавляем ключи из Application
 	context['default'] = {
 		'application': {
@@ -77,7 +77,7 @@ def GetApplicationRouter(request, id=0):
 
 	if id==0:
 		try:
-			ApplicationFound=Application.objects.get(creator=request.user, status='черновик')
+			ApplicationFound=ApplicationRouter.objects.get(creator=request.user, status='черновик')
 		except ObjectDoesNotExist:
 			print("bad")
 			return redirect(request.META.get('HTTP_REFERER'))
@@ -87,7 +87,7 @@ def GetApplicationRouter(request, id=0):
 
 	else:
 		request_id=id
-		ApplicationFound=Application.objects.get(id=request_id)
+		ApplicationFound=ApplicationRouter.objects.get(id=request_id)
 		if ApplicationFound.status=="удалено":
 			return redirect('sendSearch')
 		return render(request, 'application.html', {'id': ApplicationFound.id, 'address': ApplicationFound.Adress, 'total_users': ApplicationFound.TotalUsers, 'data' : {'routers': AddedRouter.objects.filter(id_application=ApplicationFound.id) } })
@@ -103,7 +103,7 @@ def AddRouterDatabase(request, id):
 		else: request_Adress=''
 		if request.POST.get("TotalUsers") !='': request_TotalUsers = request.POST.get("TotalUsers")
 		else: request_TotalUsers=None
-		Application.objects.filter(id=request_id).update(Adress=request_Adress, TotalUsers=request_TotalUsers)
+		ApplicationRouter.objects.filter(id=request_id).update(Adress=request_Adress, TotalUsers=request_TotalUsers)
 		
 		return redirect('application_router_url', request_id)
 	
@@ -119,11 +119,11 @@ def AddRouterDatabase(request, id):
 		print(request_id)
 		# При отстутствии заявки в статусе черновик у пользователя, она создается только при добавлении услуги в заявку. Если такая заявка уже есть, то услуга добавляется сразу в нее. Удаленные заявки просматривать нельзя, если у пользователя нет текущей заявки, ее карточка на странице услуг не активна.
 		try:
-			ApplicationFound=Application.objects.get(creator=request.user, status='черновик')
+			ApplicationFound=ApplicationRouter.objects.get(creator=request.user, status='черновик')
 			
 		except ObjectDoesNotExist:
-			Application.objects.create(creator=request.user, status='черновик', date_create=datetime.now().date())
-			AppFound=Application.objects.get(creator=request.user, status='черновик')
+			ApplicationRouter.objects.create(creator=request.user, status='черновик', date_create=datetime.now().date())
+			AppFound=ApplicationRouter.objects.get(creator=request.user, status='черновик')
 			AddedRouter.objects.create(id_application=AppFound, id_router=Router.objects.get(id=request_id))
 			return redirect('phenom_selection_url')
 		except MultipleObjectsReturned:
@@ -136,7 +136,7 @@ def AddRouterDatabase(request, id):
 
 def DeleteStatusApplicationRouterDatabase(request, id):
 	target = request.POST.get("application_id")
-	Application.objects.update(date_end=datetime.now().date())
+	ApplicationRouter.objects.update(date_end=datetime.now().date())
 	print(target)
 	with connection.cursor() as cursor:
 		cursor.execute("UPDATE Application SET status = 'удалено' WHERE id = %s", [id])

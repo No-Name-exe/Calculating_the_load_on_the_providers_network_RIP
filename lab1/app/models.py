@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 
-class Application(models.Model):
+class ApplicationRouter(models.Model):
 	class Status(models.TextChoices):
 		DRAFT = 'черновик'
 		DELETED = 'удалено'
@@ -37,7 +37,7 @@ class Router(models.Model):
 	title = models.CharField(max_length=30)
 	desc = models.CharField(max_length=255)
 	img = models.CharField(max_length=255,null=True,blank=True)
-	status = models.CharField(max_length=255,null=True,blank=True)
+	status = models.CharField(max_length=255)
 	# id = models.AutoField(primary_key=True)
 	
 	class Meta:
@@ -48,7 +48,7 @@ class Router(models.Model):
 		return self.title
 
 class AddedRouter(models.Model):
-	id_application = models.ForeignKey(Application, on_delete=models.PROTECT, default=1)
+	id_application = models.ForeignKey(ApplicationRouter, on_delete=models.PROTECT, default=1)
 	id_router = models.ForeignKey(Router, on_delete=models.PROTECT, default=1)
 	master_router_id = models.IntegerField(null=True,blank=True)
 	router_load = models.CharField(max_length=255,null=True,blank=True)
