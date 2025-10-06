@@ -50,19 +50,23 @@ defaul_application_id=3
 
 def GetRouters(request, application_routers_id=defaul_application_id):
 
+
+	context = {}
+
 	try:
 		application_routers_id=ApplicationRouter.objects.get(creator=request.user, status='черновик').id
 	except ObjectDoesNotExist:
+		context.update({'ListOfApplic': ""})    # добавляем ключи из Application
+		context.update({'ListRouter': ""})    # добавляем ключи из Application
 		pass
 	except MultipleObjectsReturned:
 		print("Несколько черновиков")
 		pass
 	else:
+		context.update({'ListOfApplic': ApplicationRouter.objects.get(id=application_routers_id)})    # добавляем ключи из Application
+		context.update({'ListRouter': AddedRouter.objects.filter(id_application=application_routers_id)})    # добавляем ключи из Application
 		pass
-
-	context = {}
-	context.update({'ListOfApplic': ApplicationRouter.objects.get(id=application_routers_id)})    # добавляем ключи из Application
-	context.update({'ListRouter': AddedRouter.objects.filter(id_application=application_routers_id)})    # добавляем ключи из Application
+	
 	context['default'] = {
 		'application': {
 			'id': application_routers_id
@@ -136,13 +140,14 @@ def AddRouterDatabase(request, id):
 			ApplicationRouter.objects.create(creator=request.user, status='черновик', date_create=datetime.now().date())
 			AppFound=ApplicationRouter.objects.get(creator=request.user, status='черновик')
 			AddedRouter.objects.create(id_application=AppFound, id_router=Router.objects.get(id=request_id))
-			return redirect('phenom_selection_url')
+			return redirect('sendSearch')
 		except MultipleObjectsReturned:
 			print("Несколько черновиков")
 			pass
 		else:
 			AddedRouter.objects.create(id_application=ApplicationFound, id_router=Router.objects.get(id=request_id))
-			return redirect('application_router_url', id=ApplicationFound.id)
+			return redirect('sendSearch')
+			# return redirect('application_router_url', id=ApplicationFound.id)
 	redirect('application_router_url')
 
 def DeleteStatusApplicationRouterDatabase(request, id):
