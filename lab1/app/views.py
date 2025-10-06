@@ -49,6 +49,17 @@ from django.http import HttpResponse
 defaul_application_id=3
 
 def GetRouters(request, application_routers_id=defaul_application_id):
+
+	try:
+		application_routers_id=ApplicationRouter.objects.get(creator=request.user, status='черновик').id
+	except ObjectDoesNotExist:
+		pass
+	except MultipleObjectsReturned:
+		print("Несколько черновиков")
+		pass
+	else:
+		pass
+
 	context = {}
 	context.update({'ListOfApplic': ApplicationRouter.objects.get(id=application_routers_id)})    # добавляем ключи из Application
 	context.update({'ListRouter': AddedRouter.objects.filter(id_application=application_routers_id)})    # добавляем ключи из Application

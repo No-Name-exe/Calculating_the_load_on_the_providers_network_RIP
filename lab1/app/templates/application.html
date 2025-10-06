@@ -3,7 +3,7 @@
 {% block title %}Заявка №{{ id }}{% endblock %}
 
 {% block main %}
-{% with DatabaseAdress="http://172.21.19.40:9000/cloud/" %}
+{% with DatabaseAdress="http://192.168.1.42:9000/cloud/" %}
     <h3 class="bigtitle">Расчет нагрузки</h3>
     <div class="content">
         <form method="post" action="{% url 'application_router_delete' id %}">
@@ -14,8 +14,8 @@
         <div class="grid">
             <form method="post" action="{% url 'router_add' id %}">
             {% csrf_token %}
-                <input name="Adress" type="text" class="text-input" placeholder="Адрес" value="{{address}}">
-                <input name="TotalUsers" type="text" class="text-input" placeholder="Количество пользователей" value="{{total_users}}">
+                <input name="Adress" type="text" class="text-input" placeholder="Адрес" value="{{address|default_if_none:""}}">
+                <input name="TotalUsers" type="text" class="text-input" placeholder="Количество пользователей" value="{{total_users|default_if_none:""}}">
                 <input name="addApplication" type="submit" value="Добавить" class="Adder">
                 <input type="hidden" name="application_id" value={{ id }} class="">
                 <input type="hidden" name="update_app" value={{ True }} class="">
@@ -27,7 +27,7 @@
         {% comment %} {% if router_info.id == order.id_router.id %} {% endcomment %}
             <form method="post" action="{% url 'router_add' id %}">
                 {% csrf_token %}
-                <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if order.master_router_id == None %}""{% else %}"{{order.master_router_id}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ order.router_load }}">
+                <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if order.master_router_id == None %}""{% else %}"{{order.master_router_id}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ order.router_load|default_if_none:"" }}">
                 <input name="addRouter" type="submit" value="Обновить" class="AdderRouter">
                 <input type="hidden" name="application_id" value={{ id }} class="">
                 <input type="hidden" name="router_id" value={{ order.id_router.id }} class="">
