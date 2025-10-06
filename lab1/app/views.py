@@ -139,5 +139,5 @@ def DeleteStatusApplicationRouterDatabase(request, id):
 	ApplicationRouter.objects.update(date_end=datetime.now().date())
 	print(target)
 	with connection.cursor() as cursor:
-		cursor.execute("UPDATE Application SET status = 'удалено' WHERE id = %s", [id])
+		cursor.execute("UPDATE ApplicationRouter SET status = 'удалено' WHERE id = %s", [id])
 	return redirect('sendSearch')

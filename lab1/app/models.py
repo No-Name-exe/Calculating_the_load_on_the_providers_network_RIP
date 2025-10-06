@@ -22,7 +22,7 @@ class ApplicationRouter(models.Model):
 
 
 	class Meta:
-		db_table = 'application'
+		db_table = 'applicationrouter'
 		app_label = 'app'
 	
 	def __str__(self):
@@ -37,7 +37,7 @@ class Router(models.Model):
 	title = models.CharField(max_length=30)
 	desc = models.CharField(max_length=255)
 	img = models.CharField(max_length=255,null=True,blank=True)
-	status = models.CharField(max_length=255)
+	status = models.CharField(max_length=255, choices=Status.choices, default=Status.EXIST)
 	# id = models.AutoField(primary_key=True)
 	
 	class Meta:
