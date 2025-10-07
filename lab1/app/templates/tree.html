@@ -1,0 +1,17 @@
+<li class="TreeRender">
+
+		<span class="">Роутер №{{ branch.id }}</span>
+		<input name="Master[]" type="text" class="" placeholder="Мастер роутер" value={% if branch.master_router_id == None %}""{% else %}"{{branch.master_router_id}}"{% endif %}>
+		<input name="Load[]" type="text" class="" placeholder="Нагрузка" value="{{ branch.router_load|default_if_none:"" }}">
+		<input type="hidden" name="router_id[]" value="{{ branch.id }}" class="">
+		<input type="hidden" name="cycle_tree" value="{{ branch.counter }}" class="">
+		<input type="hidden" name="update_router" value="{{ True }}" class="">
+
+    {% if branch.children %}
+        <ul class="TreeRender">
+            {% for child in branch.children %}
+                {% include 'tree.html' with branch=child %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>

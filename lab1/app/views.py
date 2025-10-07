@@ -105,29 +105,53 @@ def GetApplicationRouter(request, id=0):
 		ApplicationFound=ApplicationRouter.objects.get(id=request_id)
 		if ApplicationFound.status=="удалено":
 			return redirect('sendSearch')
-		return render(request, 'application.html', {'id': ApplicationFound.id, 'address': ApplicationFound.Adress, 'total_users': ApplicationFound.TotalUsers, 'data' : {'routers': AddedRouter.objects.filter(id_application=ApplicationFound.id) } })
+		def TreeCreate(data):
+			lookup = {}
+			for node in data:
+				node['children'] = []
+				lookup[node['id']] = node
+
+			roots = []
+			for node in data:
+				parent_id = node['master_router_id']
+				if parent_id:
+					parent = lookup.get(parent_id)
+					if parent:
+						parent['children'].append(node)
+				else:
+					roots.append(node)
+			return roots
+			
+		TreeData=TreeCreate(list(AddedRouter.objects.filter(id_application=ApplicationFound.id).values()))
+		return render(request, 'application.html', {'id': ApplicationFound.id, 'address': ApplicationFound.Adress, 'total_users': ApplicationFound.TotalUsers, 'data' : {'routers': AddedRouter.objects.filter(id_application=ApplicationFound.id) }, 'tree' : TreeData})
 
 
 
 def AddRouterDatabase(request, id):
 	request_id = request.POST.get("router_id")
 	if request.POST.get("update_app"):
-		request_id= request.POST.get("application_id")
-		print(request_id)
+		request_app= request.POST.get("application_id")
+		request_routers=request.POST.getlist('router_id[]')
+		request_masters = request.POST.getlist('Master[]')
+		request_loads = request.POST.getlist('Load[]')
+		
+		print(request_app)
 		if request.POST.get("Adress") !='': request_Adress = request.POST.get("Adress") 
 		else: request_Adress=''
 		if request.POST.get("TotalUsers") !='': request_TotalUsers = request.POST.get("TotalUsers")
 		else: request_TotalUsers=None
-		ApplicationRouter.objects.filter(id=request_id).update(Adress=request_Adress, TotalUsers=request_TotalUsers)
+		ApplicationRouter.objects.filter(id=request_app).update(Adress=request_Adress, TotalUsers=request_TotalUsers)
 		
-		return redirect('application_router_url', request_id)
+		for RouterTarget, MasterTarget, LoadTarget in zip(request_routers, request_masters, request_loads):
+			if RouterTarget==MasterTarget:
+				print("Ошибка совпадает роуетер с назначаемым мастером")
+			else:
+				AddedRouter.objects.filter(id=RouterTarget).update(master_router_id=MasterTarget or None, router_load=LoadTarget or '')
+
+		return redirect('application_router_url', request_app)
 	
 	elif request.POST.get("update_router"):
-		if request.POST.get("Master") !='': request_Master = request.POST.get("Master") 
-		else: request_Master=''
-		if request.POST.get("Load") !='': request_Load = request.POST.get("Load") 
-		else: request_Load=''
-		AddedRouter.objects.filter(id_application=request_id, id_router=Router.objects.get(id=request_id)).update(master_router_id=request_Master, router_load=request_Load)
+		pass
 		
 	else:
 

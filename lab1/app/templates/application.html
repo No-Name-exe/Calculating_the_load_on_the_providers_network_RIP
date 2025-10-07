@@ -1,6 +1,6 @@
 {% extends 'head.html' %}
 
-{% block title %}Заявка №{{ id }}{% endblock %}
+{% block title %}Заявка расчета нагрузки №{{ id }}{% endblock %}
 
 {% block main %}
 {% with DatabaseAdress="http://192.168.1.42:9000/cloud/" %}
@@ -17,18 +17,23 @@
                 <input name="Adress" type="text" class="text-input" placeholder="Адрес" value="{{address|default_if_none:""}}">
                 <input name="TotalUsers" type="text" class="text-input" placeholder="Количество пользователей" value="{{total_users|default_if_none:""}}">
                 <input name="addApplication" type="submit" value="Добавить" class="Adder">
-                <input type="hidden" name="application_id" value={{ id }} class="">
-                <input type="hidden" name="update_app" value={{ True }} class="">
+                <input type="hidden" name="application_id" value="{{ id }}" class="">
+                <input type="hidden" name="update_app" value="{{ True }}" class="">
+                <ul class="TreeRender">
+                {% for root in tree %}
+                    {% include 'tree.html' with branch=root %}
+                {% endfor %}
+                </ul>
             </form>
         </div>
         {% for order in data.routers %}
-        <span class="block-deep"><span class="number">Роутер №{{ order.id_router.id }}</span><a href="{% url 'router_url' order.id_router.id %}" class="list"><img class="image"  src="{{DatabaseAdress}}{{order.id_router.img}}" width="104" height="88" /><span class="title">{{ order.id_router.title }}</span></a><span class="desc-deep"> {{ order.id_router.desc }}</span>
-        {% comment %} {% for router_info in ListRouter %} {% endcomment %}
+        <span class="block-deep">{% comment %} <span class="number">Роутер №{{ order.id_router.id }}</span> {% endcomment %}<a href="{% url 'router_url' order.id_router.id %}" class="list"><img class="image"  src="{{DatabaseAdress}}{{order.id_router.img}}" width="104" height="88" /><span class="title">{{ order.id_router.title }}</span></a><span class="desc-deep"> {{ order.id_router.desc }}</span>
+        {% comment %} {% for router_info in ListRouter %} {% endcomment %} 
         {% comment %} {% if router_info.id == order.id_router.id %} {% endcomment %}
             <form method="post" action="{% url 'router_add' id %}">
                 {% csrf_token %}
-                <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if order.master_router_id == None %}""{% else %}"{{order.master_router_id}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ order.router_load|default_if_none:"" }}">
-                <input name="addRouter" type="submit" value="Обновить" class="AdderRouter">
+                {% comment %} <input name="Master" type="text" class="text-master" placeholder="Мастер роутер" value={% if order.master_router_id == None %}""{% else %}"{{order.master_router_id}}"{% endif %}><input name="Load" type="text" class="text-load" placeholder="Нагрузка" value="{{ order.router_load|default_if_none:"" }}"> {% endcomment %}
+                {% comment %} <input name="addRouter" type="submit" value="Обновить" class="AdderRouter"> {% endcomment %}
                 <input type="hidden" name="application_id" value={{ id }} class="">
                 <input type="hidden" name="router_id" value={{ order.id_router.id }} class="">
                 <input type="hidden" name="update_router" value={{ True }} class="">
