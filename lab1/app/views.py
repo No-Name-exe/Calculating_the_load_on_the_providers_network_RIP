@@ -71,6 +71,9 @@ def GetRouters(request, application_routers_id=defaul_application_id):
 		context.update({'ListRouter': ""})    # добавляем ключи из Application
 		pass
 	except MultipleObjectsReturned:
+		application_routers_id=ApplicationRouter.objects.filter(creator=request.user, status='черновик').first().id
+		context.update({'ListOfApplic': ApplicationRouter.objects.get(id=application_routers_id)})    # добавляем ключи из Application
+		context.update({'ListRouter': AddedRouter.objects.filter(id_application=application_routers_id)})    # добавляем ключи из Application
 		print("Несколько черновиков")
 		pass
 	else:

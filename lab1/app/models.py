@@ -12,8 +12,8 @@ class ApplicationRouter(models.Model):
 		REJECTED = 'отклонён'
 
 	# id = models.IntegerField(primary_key=True)
-	creator = models.ForeignKey(User, on_delete=models.PROTECT, default=1, related_name="applications_created")
-	moderator = models.ForeignKey(User, on_delete=models.PROTECT, default=1, null=True,blank=True, related_name="applications_moderated")
+	creator = models.ForeignKey(User, on_delete=models.PROTECT, related_name="applications_created")
+	moderator = models.ForeignKey(User, on_delete=models.PROTECT, null=True,blank=True, related_name="applications_moderated")
 	status = models.CharField(max_length=255, choices=Status.choices, default=Status.DRAFT)
 	date_create = models.DateField()
 	date_modific= models.DateField(null=True,blank=True)
