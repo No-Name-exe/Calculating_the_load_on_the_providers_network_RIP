@@ -2,7 +2,7 @@
 
 {% load static %}
 {% block main %}
-{% with DatabaseAdress="http://192.168.1.43:9000/cloud/" %}
+{% with DatabaseAdress="http://172.21.19.40:9000/cloud/" %}
 	<div class="requests" {% if ListRouter|length == 0 %}style="display: none"{% endif %}><span class="circle"><span class="requests_number">{% block number %}{% endblock %}</span></span><a class="Link" href="{% url 'application_router_url' id=default.application.id  %}"><img src="{{DatabaseAdress}}list.svg" class="requests" /></a></div>
 {% endwith %}
 	<h2 class="bigtitle">Cписок маршрутизаторов</h2>

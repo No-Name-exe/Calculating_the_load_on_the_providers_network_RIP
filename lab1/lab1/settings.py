@@ -81,7 +81,7 @@ DATABASES = {
         'NAME': 'RouterDB',
         'USER': 'root',
         'PASSWORD': 'passworddb',
-        'HOST': '192.168.1.43',
+        'HOST': '172.21.19.40',
         'PORT': 5432,
     }
 }
@@ -89,7 +89,7 @@ DATABASES = {
 AWS_STORAGE_BUCKET_NAME = 'cloud'
 AWS_ACCESS_KEY_ID = 'minio'
 AWS_SECRET_ACCESS_KEY = '12345678'
-AWS_S3_ENDPOINT_URL = '192.168.1.43:9000'
+AWS_S3_ENDPOINT_URL = '172.21.19.40:9000'
 MINIO_USE_SSL = False
 
 # Password validation
