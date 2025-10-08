@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-	'app'
+	'app',
+	'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -80,11 +81,16 @@ DATABASES = {
         'NAME': 'RouterDB',
         'USER': 'root',
         'PASSWORD': 'passworddb',
-        'HOST': '192.168.1.40',
+        'HOST': '192.168.1.43',
         'PORT': 5432,
     }
 }
 
+AWS_STORAGE_BUCKET_NAME = 'cloud'
+AWS_ACCESS_KEY_ID = 'minio'
+AWS_SECRET_ACCESS_KEY = '12345678'
+AWS_S3_ENDPOINT_URL = '192.168.1.43:9000'
+MINIO_USE_SSL = False
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

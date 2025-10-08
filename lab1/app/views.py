@@ -1,11 +1,21 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .models import Router, ApplicationRouter, AddedRouter
+from django.contrib.auth.models import User
+from .minio import Minio_addpicture, Minio_deletepicture
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from datetime import datetime
 from django.db import connection
+
 # Create your views here.
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.decorators import api_view
+from .serializers import RouterSerializer, AppSerializer, AddedSerializer, UserDetailSerializer
+from rest_framework.response import Response
+
 
 from django.http import HttpResponse
+
 # Database={}
 # Database["data"]={
 # 		'routers': [
@@ -181,3 +191,141 @@ def DeleteStatusApplicationRouterDatabase(request, id):
 	with connection.cursor() as cursor:
 		cursor.execute("UPDATE ApplicationRouter SET status = 'удалено' WHERE id = %s", [id])
 	return redirect('sendSearch')
+
+
+#REST API
+#▼▼▼▼▼▼▼▼
+
+def user():
+	try:
+		user1 = User.objects.get(id=1)
+	except:
+		pass
+	return user1
+
+#Домен услуги:
+class StockList(APIView):
+	model_class = Router
+	serializer_class = RouterSerializer
+
+@api_view(['GET'])
+def GetRecord(request, id, format=None):
+	Router_instance = get_object_or_404(Router, id=id)
+	serializer = RouterSerializer(Router_instance)
+	return Response(serializer.data)
+@api_view(['GET'])
+def GetFilter(request, search, format=None):
+	Router_list = Router.objects.filter(title__startswith=search)
+	serializer = RouterSerializer(Router_list, many=True)
+	return Response(serializer.data)
+@api_view(['POST'])
+def PostRouter(request, format=None):
+	serializer = RouterSerializer(data=request.data)
+	if serializer.is_valid():
+		serializer.save()
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['PUT'])
+def PutRouter(request, id, format=None):
+	Router_list = get_object_or_404(Router, id=id)
+	serializer = RouterSerializer(Router_list, data=request.data, partial=True)
+	if serializer.is_valid():
+		serializer.save()
+		return Response(serializer.data)
+	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['DELETE'])
+def DeleteRouter(request, id, format=None):
+	Router_instance = get_object_or_404(Router, id=id)
+	Router_instance.delete()
+	Minio_deletepicture(id)
+	return Response(status=status.HTTP_204_NO_CONTENT)
+@api_view(['POST'])
+def PostDraft(request, id, format=None):
+	Router_instance = get_object_or_404(Router, id=id)
+
+	application = ApplicationRouter.objects.create(
+	creator=user(),
+	date_create=datetime.now().date(),
+	status=ApplicationRouter.Status.DRAFT
+	)
+
+	AddedRouter.objects.create(
+	id_application=application,
+	id_router=Router_instance
+	)
+
+	serializer = AppSerializer(application, data=request.data)
+	print(serializer)
+	if serializer.is_valid():
+		# serializer.save()
+		serializer.creator=user()
+		print(serializer)
+	return Response(status=status.HTTP_201_CREATED)
+@api_view(['POST'])
+def PostPicture(request, id, format=None):
+	print("Request data:", request.data)
+	print("Request FILES:", request.FILES)
+
+	Router_instance = get_object_or_404(Router, id=id)
+
+	pic = request.FILES.get('img')
+	if not pic:
+		return Response({"error": "Файл не прикреплен"}, status=status.HTTP_400_BAD_REQUEST)
+	
+	pic_result = Minio_addpicture(Router_instance, pic)
+	if 'error' in pic_result:
+		return pic_result
+	
+	serializer = RouterSerializer(Router_instance)
+	# if serializer.is_valid():
+	# 	serializer.save()
+	# 	return Response(serializer.data, status=status.HTTP_201_CREATED)
+	return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#Домен заявки:
+@api_view(['GET'])
+def GetIcons():
+	pass
+@api_view(['GET'])
+def GetApps():
+	pass
+@api_view(['GET'])
+def GetApp():
+	pass
+@api_view(['PUT'])
+def PutApp():
+	pass
+@api_view(['PUT'])
+def PutComplete():
+	pass
+@api_view(['PUT'])
+def PutModerator():
+	pass
+@api_view(['DELETE'])
+def DeleteApp():
+	pass
+
+#Домен м-м:
+@api_view(['DELETE'])
+def DeleteAdded():
+	pass
+@api_view(['PUT'])
+def PutAdded():
+	pass
+
+#Домен пользователь:
+@api_view(['POST'])
+def PostRegister():
+	pass
+@api_view(['GET'])
+def GetUser():
+	pass
+@api_view(['PUT'])
+def PutUser():
+	pass
+@api_view(['POST'])
+def PostAuth():
+	pass
+@api_view(['POST'])
+def PostExit():
+	pass
