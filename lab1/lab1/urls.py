@@ -21,7 +21,7 @@ from app import views
 urlpatterns = [
 	path('admin/', admin.site.urls),
 	path('', views.GetRouters, name='sendSearch'),
-	path('router/<int:id>/', views.GetRouter, name='router_url'),
+	path('router/<int:id>/', views.GetRouterHttp, name='router_url'),
 	path('application/<int:id>/', views.GetApplicationRouter, name='application_router_url'),
 	path('addrouter/<int:id>/', views.AddRouterDatabase, name='router_add'),
 	path('application_router_delete/<int:id>', views.DeleteStatusApplicationRouterDatabase, name='application_router_delete'),
@@ -59,7 +59,7 @@ urlpatterns = [
 	# """
 	path('api/', include([
 		path('Routers/', include([
-			path('<int:id>/', views.GetRecord, name='api_Routers_get_url'),# GET одна запись
+			path('<int:id>/', views.GetRouter, name='api_Routers_get_url'),# GET одна запись
 			path('filter/<str:search>/', views.GetFilter, name='api_Routers_filter_url'),# GET список с фильтрацией
 			path('add/', views.PostRouter, name='api_Routers_add_url'),# POST добавление (без изображения)
 			path('put/<int:id>/', views.PutRouter, name='api_Routers_put_url'),# PUT изменение
@@ -70,10 +70,10 @@ urlpatterns = [
 		path('AppRouters/', include([
 			path('icon/', views.GetIcons, name='api_AppRouters_icons_url'),# GET иконки корзины (без входных параметров, ид заявки вычисляется). Возвращается id заявки-черновика этого пользователя и количество услуг в этой заявке
 			path('filter/', views.GetApps, name='api_AppRouters_list_url'),# GET список (кроме удаленных и черновика, поля модератора и создателя через логины) с фильтрацией по диапазону даты формирования и статусу
-			path('', views.GetApp, name='api_AppRouters_get_url'),# GET одна запись (поля заявки + ее услуги). При получении заявки возвращется список ее услуг с картинками
+			path('<int:id>/', views.GetApp, name='api_AppRouters_get_url'),# GET одна запись (поля заявки + ее услуги). При получении заявки возвращется список ее услуг с картинками
 			path('put/<int:id>/', views.PutApp, name='api_AppRouters_put_url'),# PUT изменения полей заявки по теме
-			path('complete/', views.PutComplete, name='api_AppRouters_complete_url'),# PUT сформировать создателем (дата формирования). Происходит проверка на обязательные поля
-			path('mod/', views.PutModerator, name='api_AppRouters_moderator_url'),# PUT завершить/отклонить модератором. При завершить/отклонении заявки проставляется модератор и дата завершения. Одно из доп. полей заявки или м-м рассчитывается (реализовать формулу представленную в лаб-2) при завершении заявки (вычисление стоимости заказа, даты доставки в течении месяца, вычисления в м-м).
+			path('complete/<int:id>/', views.PutComplete, name='api_AppRouters_complete_url'),# PUT сформировать создателем (дата формирования). Происходит проверка на обязательные поля
+			path('mod/<int:id>/', views.PutModerator, name='api_AppRouters_moderator_url'),# PUT завершить/отклонить модератором. При завершить/отклонении заявки проставляется модератор и дата завершения. Одно из доп. полей заявки или м-м рассчитывается (реализовать формулу представленную в лаб-2) при завершении заявки (вычисление стоимости заказа, даты доставки в течении месяца, вычисления в м-м).
 			path('delete/<int:id>/', views.DeleteApp, name='api_AppRouters_delete_url'),# DELETE удаление (дата формирования)
 		])),
 		path('AddedRouters/', include([

@@ -27,7 +27,7 @@ class ApplicationRouter(models.Model):
 		app_label = 'app'
 	
 	def __str__(self):
-		return f"Заявка	 № {self.id}"
+		return f"Заявка	 № {self.pk}"
 
 		
 class Router(models.Model):
@@ -52,7 +52,7 @@ class AddedRouter(models.Model):
 	id_application = models.ForeignKey(ApplicationRouter, on_delete=models.PROTECT, default=1)
 	id_router = models.ForeignKey(Router, on_delete=models.PROTECT, default=1)
 	master_router_id = models.IntegerField(null=True,blank=True)
-	router_load = models.CharField(max_length=255,null=True,blank=True)
+	router_load = models.IntegerField(null=True,blank=True)
 
 	class Meta:
 		db_table = 'addedrouter'

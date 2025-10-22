@@ -3,7 +3,7 @@
 {% block title %}Заявка расчета нагрузки №{{ id }}{% endblock %}
 
 {% block main %}
-{% with DatabaseAdress="http://172.21.19.40:9000/cloud/" %}
+{% with DatabaseAdress="http://192.168.1.44:9000/cloud/" %}
     <h3 class="bigtitle">Расчет нагрузки</h3>
     <div class="content">
         <form method="post" action="{% url 'application_router_delete' id %}">

@@ -3,8 +3,8 @@
 {% block title %}Маршрутизатор №{{ data.id }}{% endblock %}
 
 {% block main %}
-{% with DatabaseAdress="http://172.21.19.40:9000/cloud/" %}
+{% with DatabaseAdress="http://192.168.1.48:9000/cloud/" %}
     <h3 class="bigtitle">Информация о маршрутизаторе</h3>
-    <span class="block-deep"><img class="image"  src="http://172.21.19.40:9000/cloud/{{data.img}}" width="104" height="88" /><span class="title">{{ data.title }}</span><span class="desc-deep-rev"> {{ data.desc }}</span></span>
+    <span class="block-deep"><img class="image"  src="http://192.168.1.48:9000/cloud/{{data.img}}" width="104" height="88" /><span class="title">{{ data.title }}</span><span class="desc-deep-rev"> {{ data.desc }}</span></span>
 {% endwith %}
 {% endblock %}  

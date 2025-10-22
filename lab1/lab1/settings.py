@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 	'app',
 	'rest_framework',
+	'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -81,15 +82,23 @@ DATABASES = {
         'NAME': 'RouterDB',
         'USER': 'root',
         'PASSWORD': 'passworddb',
-        'HOST': '172.21.19.40',
+        'HOST': '192.168.1.48',
         'PORT': 5432,
     }
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        # исключите SessionAuthentication, если не нужно
+    ),
 }
 
 AWS_STORAGE_BUCKET_NAME = 'cloud'
 AWS_ACCESS_KEY_ID = 'minio'
 AWS_SECRET_ACCESS_KEY = '12345678'
-AWS_S3_ENDPOINT_URL = '172.21.19.40:9000'
+AWS_S3_ENDPOINT_URL = '192.168.1.48:9000'
 MINIO_USE_SSL = False
 
 # Password validation

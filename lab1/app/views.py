@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from .models import Router, ApplicationRouter, AddedRouter
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
 from .minio import Minio_addpicture, Minio_deletepicture
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from datetime import datetime
@@ -10,12 +11,17 @@ from django.utils.dateparse import parse_datetime
 # Create your views here.
 from rest_framework.views import APIView
 from rest_framework import status
-from rest_framework.decorators import api_view
-from .serializers import RouterSerializer, AppSerializer, AddedSerializer, UserDetailSerializer
+from rest_framework.authentication import TokenAuthentication
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from .serializers import RouterSerializer, AppSerializer, AddedSerializer, UserDetailSerializer, AppAddedRouterSerializer, UserRegisterSerializer, RouterPUTSerializer
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authtoken.models import Token
 
 
-from django.http import HttpResponse
+from rest_framework.request import Request
+from django.http import HttpResponse, HttpRequest
 
 # Database={}
 # Database["data"]={
@@ -59,7 +65,7 @@ from django.http import HttpResponse
 # Константы и параметры по умолчианию
 defaul_application_id=3
 
-def GetRouters(request, application_routers_id=defaul_application_id):
+def GetRouters(request: HttpRequest, application_routers_id=defaul_application_id):
 
 
 	context = {}
@@ -71,7 +77,7 @@ def GetRouters(request, application_routers_id=defaul_application_id):
 		context.update({'ListRouter': ""})    # добавляем ключи из Application
 		pass
 	except MultipleObjectsReturned:
-		application_routers_id=ApplicationRouter.objects.filter(creator=request.user, status='черновик').first().id
+		application_routers_id=ApplicationRouter.objects.filter(creator=request.user, status='черновик').first().pk # type: ignore
 		context.update({'ListOfApplic': ApplicationRouter.objects.get(id=application_routers_id)})    # добавляем ключи из Application
 		context.update({'ListRouter': AddedRouter.objects.filter(id_application=application_routers_id)})    # добавляем ключи из Application
 		print("Несколько черновиков")
@@ -97,22 +103,22 @@ def GetRouters(request, application_routers_id=defaul_application_id):
 	# 	context.update({'data' : {'req': input_text}})
 	return render(request, 'selection.html', context)
 
-def GetRouter(request, id):
+def GetRouterHttp(request: HttpRequest, id):
 	Looking=id
 	print(Router.objects.get(id=Looking))
 	return render(request, 'router.html', {'data' :Router.objects.get(id=Looking)})
 
-def GetApplicationRouter(request, id=0):
+def GetApplicationRouter(request: HttpRequest, id=0):
 
 	if id==0:
 		try:
 			ApplicationFound=ApplicationRouter.objects.get(creator=request.user, status='черновик')
 		except ObjectDoesNotExist:
 			print("bad")
-			return redirect(request.META.get('HTTP_REFERER'))
+			return redirect(request.META.get('HTTP_REFERER') or 'sendSearch')
 		else:
 			print("good")
-			pass
+			return redirect(request.META.get('HTTP_REFERER') or 'sendSearch')
 
 	else:
 		request_id=id
@@ -136,12 +142,12 @@ def GetApplicationRouter(request, id=0):
 					roots.append(node)
 			return roots
 			
-		TreeData=TreeCreate(list(AddedRouter.objects.filter(id_application=ApplicationFound.id).values()))
-		return render(request, 'application.html', {'id': ApplicationFound.id, 'address': ApplicationFound.Adress, 'total_users': ApplicationFound.TotalUsers, 'data' : {'routers': AddedRouter.objects.filter(id_application=ApplicationFound.id) }, 'tree' : TreeData})
+		TreeData=TreeCreate(list(AddedRouter.objects.filter(id_application=ApplicationFound.pk).values()))
+		return render(request, 'application.html', {'id': ApplicationFound.pk, 'address': ApplicationFound.Adress, 'total_users': ApplicationFound.TotalUsers, 'data' : {'routers': AddedRouter.objects.filter(id_application=ApplicationFound.pk) }, 'tree' : TreeData})
 
 
 
-def AddRouterDatabase(request, id):
+def AddRouterDatabase(request: HttpRequest, id):
 	request_id = request.POST.get("router_id")
 	if request.POST.get("update_app"):
 		request_app= request.POST.get("application_id")
@@ -157,15 +163,30 @@ def AddRouterDatabase(request, id):
 		ApplicationRouter.objects.filter(id=request_app).update(Adress=request_Adress, TotalUsers=request_TotalUsers)
 		
 		for RouterTarget, MasterTarget, LoadTarget in zip(request_routers, request_masters, request_loads):
+			try:
+				MasterTarget = int(MasterTarget) if MasterTarget else None
+			except ValueError:
+				MasterTarget=None
+			try:
+				LoadTarget = LoadTarget.replace('%', '').replace(' ', '')
+				if LoadTarget.isdigit():
+					LoadTarget = int(LoadTarget)
+				else:
+					LoadTarget = None
+			except AttributeError:
+				LoadTarget=None
 			if RouterTarget==MasterTarget:
 				print("Ошибка совпадает роуетер с назначаемым мастером")
+			elif not AddedRouter.objects.filter(id_application=request_app, id=MasterTarget).exists() and MasterTarget is not None:
+				print("Ошибка роуетер мастер вне заявки")
+				pass
 			else:
-				AddedRouter.objects.filter(id=RouterTarget).update(master_router_id=MasterTarget or None, router_load=LoadTarget or '')
+				AddedRouter.objects.filter(id=RouterTarget).update(master_router_id=MasterTarget or None, router_load=LoadTarget or None)
 
 		return redirect('application_router_url', request_app)
 	
 	elif request.POST.get("update_router"):
-		pass
+		return Response(status=status.HTTP_308_PERMANENT_REDIRECT)
 		
 	else:
 
@@ -181,14 +202,14 @@ def AddRouterDatabase(request, id):
 			return redirect('sendSearch')
 		except MultipleObjectsReturned:
 			print("Несколько черновиков")
-			pass
+			return Response("Несколько черновиков",status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 		else:
 			AddedRouter.objects.create(id_application=ApplicationFound, id_router=Router.objects.get(id=request_id))
 			return redirect('sendSearch')
 			# return redirect('application_router_url', id=ApplicationFound.id)
 	redirect('application_router_url')
 
-def DeleteStatusApplicationRouterDatabase(request, id):
+def DeleteStatusApplicationRouterDatabase(request: HttpRequest, id):
 	target = request.POST.get("application_id")
 	ApplicationRouter.objects.update(date_end=datetime.now().date())
 	print(target)
@@ -200,163 +221,268 @@ def DeleteStatusApplicationRouterDatabase(request, id):
 #REST API
 #▼▼▼▼▼▼▼▼
 
-def user():
-	try:
-		user1 = User.objects.get(id=1)
-	except:
-		pass
-	return user1
-
 #Домен услуги:
 class StockList(APIView):
 	model_class = Router
 	serializer_class = RouterSerializer
 
 @api_view(['GET'])
-def GetRecord(request, id, format=None):
-	Router_instance = get_object_or_404(Router, id=id)
+def GetRouter(request: Request, id, format=None):
+	Router_instance = Router.objects.get(id=id)
 	serializer = RouterSerializer(Router_instance)
 	return Response(serializer.data)
 @api_view(['GET'])
-def GetFilter(request, search, format=None):
+def GetFilter(request: Request, search, format=None):
 	Router_list = Router.objects.filter(title__startswith=search)
 	serializer = RouterSerializer(Router_list, many=True)
 	return Response(serializer.data)
 @api_view(['POST'])
-def PostRouter(request, format=None):
+def PostRouter(request: Request, format=None):
 	serializer = RouterSerializer(data=request.data)
 	if serializer.is_valid():
 		serializer.save()
 		return Response(serializer.data, status=status.HTTP_201_CREATED)
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['PUT'])
-def PutRouter(request, id, format=None):
-	Router_list = get_object_or_404(Router, id=id)
-	serializer = RouterSerializer(Router_list, data=request.data, partial=True)
+def PutRouter(request: Request, id, format=None):
+	Router_list = Router.objects.get(id=id)
+	serializer = RouterPUTSerializer(Router_list, data=request.data, partial=True)
 	if serializer.is_valid():
 		serializer.save()
 		return Response(serializer.data)
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['DELETE'])
-def DeleteRouter(request, id, format=None):
-	Router_instance = get_object_or_404(Router, id=id)
+def DeleteRouter(request: Request, id, format=None):
+	Router_instance = Router.objects.get(id=id)
 	Router_instance.delete()
 	Minio_deletepicture(id)
 	return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['POST'])
-def PostDraft(request, id, format=None):
-	Router_instance = get_object_or_404(Router, id=id)
+def PostDraft(request: Request, id, format=None):
 
-	application = ApplicationRouter.objects.create(
-	creator=user(),
-	date_create=datetime.now().date(),
-	status=ApplicationRouter.Status.DRAFT
-	)
+	if FindUserDraftApplication(user()):
+		print("Draft найден")
+		Router_instance = Router.objects.get(id=id)
+		App_instance = FindUserDraftApplication(user())
+		AddedRouter.objects.create(
+		id_application=App_instance,
+		id_router=Router_instance
+		)
+		serializer = AppSerializer(App_instance, data=request.data)
+		pass
+	else:
+		Router_instance = Router.objects.get(id=id)
+		
+		application = ApplicationRouter.objects.create(
+		creator=user(),
+		date_create=datetime.now().date(),
+		status=ApplicationRouter.Status.DRAFT
+		)
+		AddedRouter.objects.create(
+		id_application=application,
+		id_router=Router_instance
+		)
+		serializer = AppSerializer(application, data=request.data)
+		pass
 
-	AddedRouter.objects.create(
-	id_application=application,
-	id_router=Router_instance
-	)
-
-	serializer = AppSerializer(application, data=request.data)
-	print(serializer)
+	# print(serializer)
 	# if serializer.is_valid():
 	# 	# serializer.save()
 	# 	serializer.creator=user()
 	# 	print(serializer)
 	return Response(status=status.HTTP_201_CREATED)
 @api_view(['POST'])
-def PostPicture(request, id, format=None):
+def PostPicture(request: Request, id, format=None):
 	print("Request data:", request.data)
 	print("Request FILES:", request.FILES)
 
-	Router_instance = get_object_or_404(Router, id=id)
-
-	pic = request.FILES.get('img')
-	if not pic:
-		return Response({"error": "Файл не прикреплен"}, status=status.HTTP_400_BAD_REQUEST)
-	
-	pic_result = Minio_addpicture(Router_instance, pic)
-	if 'error' in pic_result:
-		return pic_result
-	
-	serializer = RouterSerializer(Router_instance)
-	# if serializer.is_valid():
-	# 	serializer.save()
-	# 	return Response(serializer.data, status=status.HTTP_201_CREATED)
-	return Response(serializer.data, status=status.HTTP_201_CREATED)
+	Router_instance = Router.objects.get(id=id)
+	if not isinstance(request.FILES, dict):
+		return Response({"Нет запроса"}, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		pic = request.FILES.get('img')
+		if not pic:
+			return Response({"error": "Файл не прикреплен"}, status=status.HTTP_400_BAD_REQUEST)
+		
+		pic_result = Minio_addpicture(Router_instance, pic)
+		if 'error' in pic_result:
+			return pic_result
+		
+		serializer = RouterSerializer(Router_instance)
+		# if serializer.is_valid():
+		# 	serializer.save()
+		# 	return Response(serializer.data, status=status.HTTP_201_CREATED)
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 #Домен заявки:
 @api_view(['GET'])
-def GetIcons(request, format=None):
-	App_instance = ApplicationRouter.objects.filter(creator=user(), status="черновик").first()
-	# serializer = RouterSerializer(App_instance)
-	routers_count=AddedRouter.objects.filter(id_application=App_instance).count()
-	serializer = AppSerializer(App_instance)
-
-	# Получаем все иконки из услуг по заявке, исключаем пустые (если icon может быть null)
-	icons_qs = AddedRouter.objects.filter(id_application=App_instance)
-	images = []
-	for service in icons_qs:
-		# Предполагаем, что есть связь к Router через поле id_router
-		router = service.id_router
-		if router and router.img:
-			if hasattr(router.img, 'url'):
-				images.append(router.img.url)
-			else:
-				images.append(str(router.img))
-	data = {}
-	data['routers_count'] = routers_count
-	data['id_application'] = App_instance.id
-	data['images'] = images
-	return Response(data, status=status.HTTP_201_CREATED)
+def GetIcons(request: Request, format=None):
+	App_instance = ApplicationRouter.objects.filter(creator=user(), status=ApplicationRouter.Status.DRAFT).first()
+	if not App_instance:
+		print("ApplicationRouter вернул None")
+	else:
+		# serializer = RouterSerializer(App_instance)
+		routers_count=AddedRouter.objects.filter(id_application=App_instance).count()
+		data = {}
+		data["routers_count"] = routers_count
+		data["id_application"] = App_instance.pk
+		return Response(data, status=status.HTTP_200_OK)
 @api_view(['GET'])
-def GetApps(request, format=None):
+def GetApps(request: Request, format=None):
 	# App_instance = ApplicationRouter.objects.filter(creator=user(), status="черновик").first()
-	date_start = request.query_params.get('date_start')
-	date_end = request.query_params.get('date_end')
-	status_filter = request.query_params.get('status')
-	queryset = ApplicationRouter.objects.all()
-	exclude_statuses = ['удалено', 'черновик']
-	queryset = queryset.exclude(status__in=exclude_statuses)
-	if status_filter:
-		queryset = queryset.filter(status=status_filter)
-	if date_start:
-		dt_start = parse_datetime(date_start)
-		if dt_start:
-			queryset = queryset.filter(formation_date__gte=dt_start)
-	if date_end:
-		dt_end = parse_datetime(date_end)
-		if dt_end:
-			queryset = queryset.filter(formation_date__lte=dt_end)
-	data = list(queryset.values('id', 'date_create', 'status', 'creator', 'moderator'))
-	return Response(data, status=status.HTTP_201_CREATED)
+	if not isinstance(request.data, dict):
+		print ("Пустой request.data")
+		pass
+	else:
+		date_start = request.data.get("date_start")
+		date_end = request.data.get("date_end")
+		status_filter = request.data.get("status")
+		queryset = ApplicationRouter.objects.all()
+		exclude_statuses = [ApplicationRouter.Status.DELETED, ApplicationRouter.Status.DRAFT]
+		queryset = queryset.exclude(status__in=exclude_statuses)
+		if status_filter:
+			queryset = queryset.filter(status=status_filter)
+		if date_start:
+			dt_start = parse_datetime(date_start)
+			if dt_start:
+				queryset = queryset.filter(date_create__gte=dt_start)
+		if date_end:
+			dt_end = parse_datetime(date_end)
+			if dt_end:
+				queryset = queryset.filter(date_create__lte=dt_end)
+		
+		# data = list(queryset.values('id', 'date_create', 'status', 'creator', 'moderator'))
+		serializer = AppSerializer(queryset, many=True)
+	return Response(serializer.data, status=status.HTTP_200_OK)
 @api_view(['GET'])
-def GetApp():
-	return Response(status=status.HTTP_201_CREATED)
+def GetApp(request: Request, id, format=None):
+	App_instance = ApplicationRouter.objects.get(id=id)
+	serializer = AppAddedRouterSerializer(App_instance)
+	return Response(serializer.data, status=status.HTTP_200_OK)
 @api_view(['PUT'])
-def PutApp():
-	return Response(status=status.HTTP_201_CREATED)
+def PutApp(request: Request, id, format=None):
+	try:
+		App_instance = ApplicationRouter.objects.get(id=id)
+	except ApplicationRouter.DoesNotExist:
+		return Response({"Нет такой заявки."}, status=status.HTTP_404_NOT_FOUND)
+	if not isinstance(request.data, dict):
+		print ("Пустой request.data")
+		pass
+	else:
+		update_data = {}
+		if request.data.get("Adress"):
+			update_data["Adress"] = request.data.get("Adress")
+		if request.data.get("TotalUsers"):
+			update_data["TotalUsers"] = request.data.get("TotalUsers")
+		serializer = AppSerializer(App_instance, data=update_data, partial=True)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_201_CREATED)
+	return Response(status=status.HTTP_400_BAD_REQUEST)
 @api_view(['PUT'])
-def PutComplete():
-	return Response(status=status.HTTP_201_CREATED)
+def PutComplete(request: Request, id, format=None):
+	try:
+		App_instance = ApplicationRouter.objects.get(id=id)
+	except ApplicationRouter.DoesNotExist:
+		return Response({"Нет такой заявки."}, status=status.HTTP_404_NOT_FOUND)
+	
+	if App_instance.TotalUsers is None:
+		return Response({"Нет нужных полей."}, status=status.HTTP_400_BAD_REQUEST)
+	
+	if App_instance.status==ApplicationRouter.Status.FORMULATED or App_instance.status==ApplicationRouter.Status.REJECTED:
+		return Response({"Нет прав."}, status=status.HTTP_403_FORBIDDEN)
+	
+	update_data = {}
+	update_data["status"] = ApplicationRouter.Status.FORMULATED
+	update_data["date_modific"] = datetime.now().date()
+	serializer = AppSerializer(App_instance, data=update_data, partial=True)
+	if serializer.is_valid():
+		serializer.save()
+		return Response(status=status.HTTP_201_CREATED)
+	return Response(status=status.HTTP_400_BAD_REQUEST)
 @api_view(['PUT'])
-def PutModerator():
-	return Response(status=status.HTTP_201_CREATED)
+def PutModerator(request: Request, id, format=None):
+	try:
+		App_instance = ApplicationRouter.objects.get(id=id)
+	except ApplicationRouter.DoesNotExist:
+		return Response({"Нет такой заявки."}, status=status.HTTP_404_NOT_FOUND)
+	
+	if not App_instance.status==ApplicationRouter.Status.FORMULATED:
+		return Response({"Нет прав."}, status=status.HTTP_403_FORBIDDEN)
+	
+	if not isinstance(request.data, dict):
+		print ("Пустой request.data")
+		pass
+	else:
+		update_data = {}
+		if request.data.get("status" ) == ApplicationRouter.Status.COMPLETED:
+			update_data["status"] = ApplicationRouter.Status.COMPLETED
+			update_data["date_end"] = datetime.now().date()
+			update_data["moderator"] = user()
+			serializer = AppSerializer(App_instance, data=update_data, partial=True)
+			if serializer.is_valid():
+				serializer.save()
+				Router_list = AddedRouter.objects.filter(id_application=App_instance)
+				SumLoadCheck: int = 0
+				for RouterSelect in Router_list:
+					if RouterSelect.router_load is not None:
+						SumLoadCheck+=RouterSelect.router_load
+				for RouterSelect in Router_list:
+					if RouterSelect.router_load is None or RouterSelect.router_load == '':
+						RouterSelect.router_load=CalculateLoad(Router_list.count(), SumLoadCheck)
+						RouterSelect.save()
+				return Response(status=status.HTTP_201_CREATED)
+			return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+		elif request.data.get("status" ) == ApplicationRouter.Status.REJECTED:
+			update_data["status"] = ApplicationRouter.Status.REJECTED
+			update_data["date_end"] = datetime.now().date()
+			update_data["moderator"] = user()
+			serializer = AppSerializer(App_instance, data=update_data, partial=True)
+			if serializer.is_valid():
+				serializer.save()
+				return Response(status=status.HTTP_201_CREATED)
+			return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+	return Response(status=status.HTTP_400_BAD_REQUEST)
 @api_view(['DELETE'])
-def DeleteApp():
-	return Response(status=status.HTTP_201_CREATED)
+def DeleteApp(request: Request, id, format=None):
+	try:
+		App_instance = ApplicationRouter.objects.get(id=id)
+	except ApplicationRouter.DoesNotExist:
+		return Response({"Нет такой заявки."}, status=status.HTTP_404_NOT_FOUND)
+	if App_instance.status==ApplicationRouter.Status.FORMULATED or App_instance.status==ApplicationRouter.Status.REJECTED:
+		return Response({"Нет прав."}, status=status.HTTP_403_FORBIDDEN)
+	update_data = {}
+	update_data["status"] = ApplicationRouter.Status.DELETED
+	update_data["date_modific"] = datetime.now().date()
+	serializer = AppSerializer(App_instance, data=update_data, partial=True)
+	if serializer.is_valid():
+		serializer.save()
+		return Response(status=status.HTTP_204_NO_CONTENT)
+	return Response(status=status.HTTP_400_BAD_REQUEST)
 
 #Домен м-м:
 @api_view(['DELETE'])
-def DeleteAdded(request, id, format=None):
-	App_instance = ApplicationRouter.objects.filter(creator=user(), status="черновик").last()
-	Router_instance = get_object_or_404(AddedRouter, id_router=id, id_application=App_instance)
-	Router_instance.delete()
+def DeleteAdded(request: Request, id, format=None):
+	try:
+		App_instance = FindUserDraftApplication(user())
+	except:
+		return Response({"Нет черновой завки"},status=status.HTTP_404_NOT_FOUND)
+	try:
+		Router_instance = AddedRouter.objects.get(id_router=id, id_application=App_instance)
+	except MultipleObjectsReturned:
+		Router_instance = AddedRouter.objects.filter(id_router=id, id_application=App_instance).last()
+		if Router_instance:
+			Router_instance.delete()
+		else:
+			return Response({"куда то пропал роутер"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+	except ObjectDoesNotExist:
+		return Response({"Нет такого роутера"},status=status.HTTP_404_NOT_FOUND)
+	else:
+		Router_instance.delete()
 	return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['PUT'])
-def PutAdded(request, id, format=None):
-	App_instance = ApplicationRouter.objects.filter(creator=user(), status="черновик").last()
+def PutAdded(request: Request, id, format=None):
+	App_instance = FindUserDraftApplication(user())
 	if not App_instance:
 		return Response({"error": "AddedRouter не найден"}, status=status.HTTP_404_NOT_FOUND)
 	Router_instance = AddedRouter.objects.filter(id_router=id, id_application=App_instance).last()
@@ -370,17 +496,79 @@ def PutAdded(request, id, format=None):
 
 #Домен пользователь:
 @api_view(['POST'])
-def PostRegister():
-	return Response(status=status.HTTP_201_CREATED)
+@permission_classes([AllowAny])
+def PostRegister(request: Request, format=None):
+	serializer = UserRegisterSerializer(data=request.data)
+	if serializer.is_valid():
+		serializer.save()
+		return Response(status=status.HTTP_201_CREATED)
+	return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 @api_view(['GET'])
-def GetUser():
-	return Response(status=status.HTTP_201_CREATED)
+@permission_classes([IsAuthenticated])
+def GetUser(request: Request, id, format=None):
+	if request.user.id != id and not request.user.is_staff:
+		return Response({"Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
+	try:
+		user = User.objects.get(id=id)
+	except User.DoesNotExist:
+		return Response({"Пользователь не найден."}, status=status.HTTP_404_NOT_FOUND)
+	serializer = UserDetailSerializer(user)
+	return Response(serializer.data, status=status.HTTP_200_OK)
 @api_view(['PUT'])
-def PutUser():
-	return Response(status=status.HTTP_201_CREATED)
+@permission_classes([IsAuthenticated])
+def PutUser(request: Request, format=None):
+	user = request.user
+	serializer = UserDetailSerializer(user, data=request.data, partial=True)
+	if serializer.is_valid():
+		serializer.save()
+		return Response(status=status.HTTP_201_CREATED)
+	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['POST'])
-def PostAuth():
-	return Response(status=status.HTTP_201_CREATED)
+@permission_classes([AllowAny])
+def PostAuth(request: Request, format=None):
+	if not isinstance(request.data, dict):
+		return Response({"detail": "Заполните имя пользователя и пароль."}, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		user_request=request.data.get("username")
+		password_request=request.data.get("password")
+		user = authenticate(request._request, username=user_request, password=password_request)
+		if user is not None:
+			login(request._request, user)
+			token, created = Token.objects.get_or_create(user=user)
+			return Response({"token": token.key, "user": UserDetailSerializer(user).data},status=status.HTTP_200_OK)
+	return Response(status=status.HTTP_400_BAD_REQUEST)
 @api_view(['POST'])
-def PostExit():
-	return Response(status=status.HTTP_201_CREATED)
+# @authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@csrf_exempt
+def PostExit(request: Request, format=None):
+	if request.user.is_authenticated:
+		Token.objects.filter(user=request.user).delete()
+		logout(request._request)
+		return Response(status=status.HTTP_200_OK)
+	else:
+		return Response({"Вы уже не авторизованы."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def user():
+	try:
+		user1 = User.objects.get(id=1)
+	except:
+		pass
+	return user1
+
+def FindUserDraftApplication(UserFind):
+	result=ApplicationRouter.objects.filter(creator=UserFind, status=ApplicationRouter.Status.DRAFT).first()
+	if result:
+		FoundApplication: ApplicationRouter = result 
+	else:
+		print('Ничего не найдено')
+		pass
+	return FoundApplication
+
+def CalculateLoad(number_of_routers: int, already_used_load: float = 0):
+	if already_used_load>=100:
+		return 0
+	result=(100-already_used_load)/number_of_routers
+	result=int(result)
+	return result
