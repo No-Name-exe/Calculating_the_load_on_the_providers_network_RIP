@@ -76,8 +76,15 @@ class AppAddedRouterSerializer(serializers.ModelSerializer):
 		return AddedForAppSerializer(added_relations, many=True).data
 
 class AddedForAppSerializer(serializers.ModelSerializer):
+	Router = serializers.SerializerMethodField()
 	class Meta:
 		# Модель, которую мы сериализуем
 		model = AddedRouter
 		# Поля, которые мы сериализуем
-		fields = ["id_router", "master_router_id", "router_load"]
+		fields = ["id_router", "master_router_id", "router_load", "Router"]
+
+	def get_Router(self, obj):
+		# Получаем все объекты AddedRouter, связанные с текущей заявкой
+		router_relations = Router.objects.filter(id=obj.id_router.id)
+		# Сериализуем их с помощью вашего сериализатора AddedSerializer
+		return RouterPUTSerializer(router_relations, many=True).data
