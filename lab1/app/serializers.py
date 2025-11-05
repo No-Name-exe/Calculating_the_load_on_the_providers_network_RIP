@@ -44,6 +44,13 @@ class AddedSerializer(serializers.ModelSerializer):
 		# Поля, которые мы сериализуем
 		fields = ["id_application", "id_router", "master_router_id", "router_load"]
 
+class AddedPUTSerializer(serializers.ModelSerializer):
+	class Meta:
+		# Модель, которую мы сериализуем
+		model = AddedRouter
+		# Поля, которые мы сериализуем
+		fields = ["master_router_id", "router_load"]
+
 class AppSerializer(serializers.ModelSerializer):
 	# вложенный сериализатор
 	creator = serializers.SlugRelatedField(read_only=True, slug_field='username')
@@ -55,6 +62,14 @@ class AppSerializer(serializers.ModelSerializer):
 
 		# Поля, которые мы сериализуем
 		fields = ["id", "creator", "moderator", "status", "date_create", "date_modific", "date_end", "Adress", "TotalUsers"]
+
+class AppPUTSerializer(serializers.ModelSerializer):
+	class Meta:
+		# Модель, которую мы сериализуем
+		model = ApplicationRouter
+
+		# Поля, которые мы сериализуем
+		fields = ["Adress", "TotalUsers"]
 
 class AppAddedRouterSerializer(serializers.ModelSerializer):
 	# вложенный сериализатор
@@ -88,3 +103,18 @@ class AddedForAppSerializer(serializers.ModelSerializer):
 		router_relations = Router.objects.filter(id=obj.id_router.id)
 		# Сериализуем их с помощью вашего сериализатора AddedSerializer
 		return RouterPUTSerializer(router_relations, many=True).data
+	
+
+class UserTokenSerializer(serializers.ModelSerializer):
+	token = serializers.CharField()
+	user = UserDetailSerializer()
+	class Meta:
+		model = User
+		fields = ['token', 'user']
+
+class UserAuthSerializer(serializers.ModelSerializer):
+	class Meta:
+		# Модель, которую мы сериализуем
+		model = User
+		# Поля, которые мы сериализуем
+		fields = ['username', 'password']

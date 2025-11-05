@@ -7,6 +7,11 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from datetime import datetime
 from django.db import connection
 from django.utils.dateparse import parse_datetime
+import redis
+from django.conf import settings
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+import uuid
 
 # Create your views here.
 from rest_framework.views import APIView
@@ -14,10 +19,11 @@ from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from .serializers import RouterSerializer, AppSerializer, AddedSerializer, UserDetailSerializer, AppAddedRouterSerializer, UserRegisterSerializer, RouterPUTSerializer
+from .serializers import *
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
+from .permissions import *
 
 
 from rest_framework.request import Request
@@ -64,6 +70,8 @@ from django.http import HttpResponse, HttpRequest
 
 # Константы и параметры по умолчианию
 defaul_application_id=3
+
+session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 def GetRouters(request: HttpRequest, application_routers_id=defaul_application_id):
 
@@ -226,24 +234,29 @@ class StockList(APIView):
 	model_class = Router
 	serializer_class = RouterSerializer
 
+@swagger_auto_schema(method='get', responses={ 200: RouterSerializer})
 @api_view(['GET'])
 def GetRouter(request: Request, id, format=None):
 	Router_instance = Router.objects.get(id=id)
 	serializer = RouterSerializer(Router_instance)
 	return Response(serializer.data)
+@swagger_auto_schema(method='get', responses={ 200: RouterSerializer})
 @api_view(['GET'])
 def GetFilter(request: Request, search, format=None):
 	Router_list = Router.objects.filter(title__startswith=search)
 	serializer = RouterSerializer(Router_list, many=True)
 	return Response(serializer.data)
+@swagger_auto_schema(method='post', request_body=RouterPUTSerializer, responses={ 201: RouterPUTSerializer, 400: 'Ошибка валидации' })
 @api_view(['POST'])
 def PostRouter(request: Request, format=None):
-	serializer = RouterSerializer(data=request.data)
+	serializer = RouterPUTSerializer(data=request.data)
 	if serializer.is_valid():
 		serializer.save()
 		return Response(serializer.data, status=status.HTTP_201_CREATED)
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@swagger_auto_schema(method='put', request_body=RouterPUTSerializer, responses={ 200: RouterPUTSerializer, 400: 'Ошибка валидации' })
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def PutRouter(request: Request, id, format=None):
 	Router_list = Router.objects.get(id=id)
 	serializer = RouterPUTSerializer(Router_list, data=request.data, partial=True)
@@ -252,12 +265,14 @@ def PutRouter(request: Request, id, format=None):
 		return Response(serializer.data)
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def DeleteRouter(request: Request, id, format=None):
 	Router_instance = Router.objects.get(id=id)
 	Router_instance.delete()
 	Minio_deletepicture(id)
 	return Response(status=status.HTTP_204_NO_CONTENT)
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def PostDraft(request: Request, id, format=None):
 
 	if FindUserDraftApplication(user()):
@@ -291,7 +306,9 @@ def PostDraft(request: Request, id, format=None):
 	# 	serializer.creator=user()
 	# 	print(serializer)
 	return Response(status=status.HTTP_201_CREATED)
+@swagger_auto_schema(method='post', request_body=openapi.Schema( type=openapi.TYPE_OBJECT, required=['img'], properties={ 'img': openapi.Schema(type=openapi.TYPE_FILE, description='Изображение'), }, ), operation_description="Добавление изображения к маршрутизатору. Передайте файл в поле 'img'.")
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def PostPicture(request: Request, id, format=None):
 	print("Request data:", request.data)
 	print("Request FILES:", request.FILES)
@@ -315,7 +332,20 @@ def PostPicture(request: Request, id, format=None):
 		return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 #Домен заявки:
+@swagger_auto_schema(
+	method='get',
+	responses={
+		200: openapi.Schema(
+			type=openapi.TYPE_OBJECT,
+			properties={
+				'routers_count': openapi.Schema(type=openapi.TYPE_INTEGER),
+				'id_application': openapi.Schema(type=openapi.TYPE_INTEGER),
+			}
+		)
+	}
+)
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def GetIcons(request: Request, format=None):
 	App_instance = ApplicationRouter.objects.filter(creator=user(), status=ApplicationRouter.Status.DRAFT).first()
 	if not App_instance:
@@ -327,17 +357,35 @@ def GetIcons(request: Request, format=None):
 		data["routers_count"] = routers_count
 		data["id_application"] = App_instance.pk
 		return Response(data, status=status.HTTP_200_OK)
+@swagger_auto_schema(
+	method='get',
+	manual_parameters=[
+		openapi.Parameter('date_start', openapi.IN_QUERY, description="Начальная дата", type=openapi.TYPE_STRING, format='date-time'),
+		openapi.Parameter('date_end', openapi.IN_QUERY, description="Конечная дата", type=openapi.TYPE_STRING, format='date-time'),
+		openapi.Parameter('status', openapi.IN_QUERY, description="Статус", type=openapi.TYPE_STRING),
+	],
+	responses={200: AppSerializer}
+)
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def GetApps(request: Request, format=None):
 	# App_instance = ApplicationRouter.objects.filter(creator=user(), status="черновик").first()
 	if not isinstance(request.data, dict):
 		print ("Пустой request.data")
 		pass
 	else:
-		date_start = request.data.get("date_start")
-		date_end = request.data.get("date_end")
-		status_filter = request.data.get("status")
-		queryset = ApplicationRouter.objects.all()
+		if request.GET:
+			date_start = request.GET.get("date_start")
+			date_end = request.GET.get("date_end")
+			status_filter = request.GET.get("status")
+		else:
+			date_start = request.data.get("date_start")
+			date_end = request.data.get("date_end")
+			status_filter = request.data.get("status")
+		if request.user.is_staff:
+			queryset = ApplicationRouter.objects.all()
+		else:
+			queryset = ApplicationRouter.objects.filter(creator=request.user)
 		exclude_statuses = [ApplicationRouter.Status.DELETED, ApplicationRouter.Status.DRAFT]
 		queryset = queryset.exclude(status__in=exclude_statuses)
 		if status_filter:
@@ -354,12 +402,16 @@ def GetApps(request: Request, format=None):
 		# data = list(queryset.values('id', 'date_create', 'status', 'creator', 'moderator'))
 		serializer = AppSerializer(queryset, many=True)
 	return Response(serializer.data, status=status.HTTP_200_OK)
+@swagger_auto_schema( method='get', responses={200: AppAddedRouterSerializer} )
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def GetApp(request: Request, id, format=None):
 	App_instance = ApplicationRouter.objects.get(id=id)
 	serializer = AppAddedRouterSerializer(App_instance)
 	return Response(serializer.data, status=status.HTTP_200_OK)
+@swagger_auto_schema(method='put', request_body=AppPUTSerializer, responses={ 201: AppSerializer, 400: 'Ошибка валидации' })
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated])
 def PutApp(request: Request, id, format=None):
 	try:
 		App_instance = ApplicationRouter.objects.get(id=id)
@@ -401,6 +453,7 @@ def PutComplete(request: Request, id, format=None):
 		return Response(status=status.HTTP_201_CREATED)
 	return Response(status=status.HTTP_400_BAD_REQUEST)
 @api_view(['PUT'])
+@permission_classes([IsManager])
 def PutModerator(request: Request, id, format=None):
 	try:
 		App_instance = ApplicationRouter.objects.get(id=id)
@@ -443,6 +496,7 @@ def PutModerator(request: Request, id, format=None):
 				return Response(status=status.HTTP_201_CREATED)
 			return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 	return Response(status=status.HTTP_400_BAD_REQUEST)
+@swagger_auto_schema(method='delete', responses={ 204: '', 400: 'Ошибка валидации', 404: 'Нет такой заявки', 403: 'Нет прав' })
 @api_view(['DELETE'])
 def DeleteApp(request: Request, id, format=None):
 	try:
@@ -461,6 +515,7 @@ def DeleteApp(request: Request, id, format=None):
 	return Response(status=status.HTTP_400_BAD_REQUEST)
 
 #Домен м-м:
+@swagger_auto_schema(method='delete', responses={ 204: '', 500: 'Ошибка выполнения удаления', 404: 'Нет такого роутера или черновой заявки' })
 @api_view(['DELETE'])
 def DeleteAdded(request: Request, id, format=None):
 	try:
@@ -480,6 +535,7 @@ def DeleteAdded(request: Request, id, format=None):
 	else:
 		Router_instance.delete()
 	return Response(status=status.HTTP_204_NO_CONTENT)
+@swagger_auto_schema(method='put', request_body=AddedPUTSerializer, responses={ 201: AddedPUTSerializer, 400: 'Ошибка валидации', 404: 'AddedRouter не найден', 404: 'ApplicationRouter не найден' })
 @api_view(['PUT'])
 def PutAdded(request: Request, id, format=None):
 	App_instance = FindUserDraftApplication(user())
@@ -488,13 +544,17 @@ def PutAdded(request: Request, id, format=None):
 	Router_instance = AddedRouter.objects.filter(id_router=id, id_application=App_instance).last()
 	if not Router_instance:
 		return Response({"error": "ApplicationRouter не найден"}, status=status.HTTP_404_NOT_FOUND)
-	serializer = AddedSerializer(Router_instance, data=request.data, partial=True)
+	serializer = AddedPUTSerializer(Router_instance, data=request.data, partial=True)
 	if serializer.is_valid():
+		if  isinstance(serializer.validated_data, dict):
+			if id == serializer.validated_data['master_router_id']:
+				return Response({"Ошибка совпадает роуетер с назначаемым мастером"},status=status.HTTP_400_BAD_REQUEST)
 		serializer.save()
 		return Response(serializer.data)
 	return Response(status=status.HTTP_400_BAD_REQUEST)
 
 #Домен пользователь:
+@swagger_auto_schema( method='POST', request_body=UserRegisterSerializer, responses={201: ""} )
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def PostRegister(request: Request, format=None):
@@ -503,6 +563,7 @@ def PostRegister(request: Request, format=None):
 		serializer.save()
 		return Response(status=status.HTTP_201_CREATED)
 	return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+@swagger_auto_schema( method='get', responses={200: UserDetailSerializer} )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def GetUser(request: Request, id, format=None):
@@ -514,6 +575,7 @@ def GetUser(request: Request, id, format=None):
 		return Response({"Пользователь не найден."}, status=status.HTTP_404_NOT_FOUND)
 	serializer = UserDetailSerializer(user)
 	return Response(serializer.data, status=status.HTTP_200_OK)
+@swagger_auto_schema( method='put', request_body=UserDetailSerializer, responses={201: ""} )
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def PutUser(request: Request, format=None):
@@ -523,6 +585,7 @@ def PutUser(request: Request, format=None):
 		serializer.save()
 		return Response(status=status.HTTP_201_CREATED)
 	return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@swagger_auto_schema( method='POST', request_body=UserAuthSerializer, responses={ 201: UserTokenSerializer})
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def PostAuth(request: Request, format=None):
@@ -533,17 +596,26 @@ def PostAuth(request: Request, format=None):
 		password_request=request.data.get("password")
 		user = authenticate(request._request, username=user_request, password=password_request)
 		if user is not None:
+			random_key = uuid.uuid4()
+			session_storage.set(str(random_key), str(user_request))
 			login(request._request, user)
 			token, created = Token.objects.get_or_create(user=user)
-			return Response({"token": token.key, "user": UserDetailSerializer(user).data},status=status.HTTP_200_OK)
+			response = Response({"token": token.key, "user": UserDetailSerializer(user).data}, status=status.HTTP_200_OK)
+			response.set_cookie("session_id", str(random_key))
+			return response
 	return Response(status=status.HTTP_400_BAD_REQUEST)
 @api_view(['POST'])
 # @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def PostExit(request: Request, format=None):
+	if not check_user_permission(request):
+		return Response({"detail": "Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
 	if request.user.is_authenticated:
 		Token.objects.filter(user=request.user).delete()
+		ssid = request.COOKIES.get("session_id")
+		if ssid:
+			session_storage.delete(ssid)
 		logout(request._request)
 		return Response(status=status.HTTP_200_OK)
 	else:
@@ -572,3 +644,12 @@ def CalculateLoad(number_of_routers: int, already_used_load: float = 0):
 	result=(100-already_used_load)/number_of_routers
 	result=int(result)
 	return result
+
+def check_user_permission(request):
+	ssid = request.COOKIES.get("session_id")
+	if not ssid:
+		return False  # Нет cookie — доступ запрещён
+	username = session_storage.get(ssid)
+	if not username:
+		return False
+	return True

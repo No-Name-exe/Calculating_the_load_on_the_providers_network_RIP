@@ -25,6 +25,8 @@ SECRET_KEY = 'django-insecure-(d7rb4_l0fl23=6465arm^^xpeg-kdkvnh-!hre*q@npg36z9_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+MyServerAdress = '192.168.1.50'
+
 ALLOWED_HOSTS = ['*']
 
 
@@ -40,6 +42,7 @@ INSTALLED_APPS = [
 	'app',
 	'rest_framework',
 	'rest_framework.authtoken',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -82,7 +85,7 @@ DATABASES = {
         'NAME': 'RouterDB',
         'USER': 'root',
         'PASSWORD': 'passworddb',
-        'HOST': '192.168.1.48',
+        'HOST': MyServerAdress,
         'PORT': 5432,
     }
 }
@@ -90,16 +93,19 @@ DATABASES = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication',
-        # исключите SessionAuthentication, если не нужно
+        'rest_framework.authentication.SessionAuthentication',
+		'rest_framework.authentication.BasicAuthentication',
     ),
 }
 
 AWS_STORAGE_BUCKET_NAME = 'cloud'
 AWS_ACCESS_KEY_ID = 'minio'
 AWS_SECRET_ACCESS_KEY = '12345678'
-AWS_S3_ENDPOINT_URL = '192.168.1.48:9000'
+AWS_S3_ENDPOINT_URL = MyServerAdress
 MINIO_USE_SSL = False
+
+REDIS_HOST = MyServerAdress
+REDIS_PORT = 6379
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
