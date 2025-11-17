@@ -275,10 +275,10 @@ def DeleteRouter(request: Request, id, format=None):
 @permission_classes([IsAuthenticated])
 def PostDraft(request: Request, id, format=None):
 
-	if FindUserDraftApplication(user()):
+	if FindUserDraftApplication(user(request)):
 		print("Draft найден")
 		Router_instance = Router.objects.get(id=id)
-		App_instance = FindUserDraftApplication(user())
+		App_instance = FindUserDraftApplication(user(request))
 		AddedRouter.objects.create(
 		id_application=App_instance,
 		id_router=Router_instance
@@ -289,7 +289,7 @@ def PostDraft(request: Request, id, format=None):
 		Router_instance = Router.objects.get(id=id)
 		
 		application = ApplicationRouter.objects.create(
-		creator=user(),
+		creator=user(request),
 		date_create=datetime.now().date(),
 		status=ApplicationRouter.Status.DRAFT
 		)
@@ -347,7 +347,7 @@ def PostPicture(request: Request, id, format=None):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def GetIcons(request: Request, format=None):
-	App_instance = ApplicationRouter.objects.filter(creator=user(), status=ApplicationRouter.Status.DRAFT).first()
+	App_instance = ApplicationRouter.objects.filter(creator=user(request), status=ApplicationRouter.Status.DRAFT).first()
 	if not App_instance:
 		print("ApplicationRouter вернул None")
 	else:
@@ -452,9 +452,18 @@ def PutComplete(request: Request, id, format=None):
 		serializer.save()
 		return Response(status=status.HTTP_201_CREATED)
 	return Response(status=status.HTTP_400_BAD_REQUEST)
+@csrf_exempt
 @api_view(['PUT'])
 @permission_classes([IsManager])
 def PutModerator(request: Request, id, format=None):
+	# if not check_user_permission(request):
+	# 	return Response({"detail": "Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
+	if not request.user.is_staff or not request.user.is_superuser:
+		print(request.user)
+		print(request.user.is_staff)
+		print(request.user.is_superuser)
+		return Response({"detail": "Доступ только модератеру."}, status=status.HTTP_403_FORBIDDEN)
+
 	try:
 		App_instance = ApplicationRouter.objects.get(id=id)
 	except ApplicationRouter.DoesNotExist:
@@ -471,7 +480,7 @@ def PutModerator(request: Request, id, format=None):
 		if request.data.get("status" ) == ApplicationRouter.Status.COMPLETED:
 			update_data["status"] = ApplicationRouter.Status.COMPLETED
 			update_data["date_end"] = datetime.now().date()
-			update_data["moderator"] = user()
+			update_data["moderator"] = user(request)
 			serializer = AppSerializer(App_instance, data=update_data, partial=True)
 			if serializer.is_valid():
 				serializer.save()
@@ -489,7 +498,7 @@ def PutModerator(request: Request, id, format=None):
 		elif request.data.get("status" ) == ApplicationRouter.Status.REJECTED:
 			update_data["status"] = ApplicationRouter.Status.REJECTED
 			update_data["date_end"] = datetime.now().date()
-			update_data["moderator"] = user()
+			update_data["moderator"] = user(request)
 			serializer = AppSerializer(App_instance, data=update_data, partial=True)
 			if serializer.is_valid():
 				serializer.save()
@@ -519,7 +528,7 @@ def DeleteApp(request: Request, id, format=None):
 @api_view(['DELETE'])
 def DeleteAdded(request: Request, id, format=None):
 	try:
-		App_instance = FindUserDraftApplication(user())
+		App_instance = FindUserDraftApplication(user(request))
 	except:
 		return Response({"Нет черновой завки"},status=status.HTTP_404_NOT_FOUND)
 	try:
@@ -538,7 +547,7 @@ def DeleteAdded(request: Request, id, format=None):
 @swagger_auto_schema(method='put', request_body=AddedPUTSerializer, responses={ 201: AddedPUTSerializer, 400: 'Ошибка валидации', 404: 'AddedRouter не найден', 404: 'ApplicationRouter не найден' })
 @api_view(['PUT'])
 def PutAdded(request: Request, id, format=None):
-	App_instance = FindUserDraftApplication(user())
+	App_instance = FindUserDraftApplication(user(request))
 	if not App_instance:
 		return Response({"error": "AddedRouter не найден"}, status=status.HTTP_404_NOT_FOUND)
 	Router_instance = AddedRouter.objects.filter(id_router=id, id_application=App_instance).last()
@@ -609,8 +618,6 @@ def PostAuth(request: Request, format=None):
 @permission_classes([IsAuthenticated])
 @csrf_exempt
 def PostExit(request: Request, format=None):
-	if not check_user_permission(request):
-		return Response({"detail": "Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
 	if request.user.is_authenticated:
 		Token.objects.filter(user=request.user).delete()
 		ssid = request.COOKIES.get("session_id")
@@ -622,10 +629,14 @@ def PostExit(request: Request, format=None):
 		return Response({"Вы уже не авторизованы."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def user():
+def user(request):
 	try:
-		user1 = User.objects.get(id=1)
+		# user1 = User.objects.get(id=1)
+		ssid = request.COOKIES.get("session_id")
+		username = session_storage.get(ssid)
+		user1 = username
 	except:
+		user1 = request.user
 		pass
 	return user1
 
@@ -650,6 +661,14 @@ def check_user_permission(request):
 	if not ssid:
 		return False  # Нет cookie — доступ запрещён
 	username = session_storage.get(ssid)
+	print(username)
 	if not username:
+		return False
+	try:
+		user = User.objects.get(username=username)
+		print(user)
+	except:
+		return False
+	if not user.is_staff:
 		return False
 	return True
