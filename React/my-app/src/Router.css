@@ -1,0 +1,357 @@
+
+.navbar {
+    background: rgba(45, 69, 96, 1);
+}
+.navbar {
+    --bs-navbar-padding-x: 0;
+    --bs-navbar-padding-y: .5rem;
+    --bs-navbar-color: rgba(var(--bs-emphasis-color-rgb), .65);
+    --bs-navbar-hover-color: rgba(var(--bs-emphasis-color-rgb), .8);
+    --bs-navbar-disabled-color: rgba(var(--bs-emphasis-color-rgb), .3);
+    --bs-navbar-active-color: rgba(var(--bs-emphasis-color-rgb), 1);
+    --bs-navbar-brand-padding-y: .3125rem;
+    --bs-navbar-brand-margin-end: 1rem;
+    --bs-navbar-brand-font-size: 1.25rem;
+    --bs-navbar-brand-color: rgba(var(--bs-emphasis-color-rgb), 1);
+    --bs-navbar-brand-hover-color: rgba(var(--bs-emphasis-color-rgb), 1);
+    --bs-navbar-nav-link-padding-x: .5rem;
+    --bs-navbar-toggler-padding-y: .25rem;
+    --bs-navbar-toggler-padding-x: .75rem;
+    --bs-navbar-toggler-font-size: 1.25rem;
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    --bs-navbar-toggler-border-color: rgba(var(--bs-emphasis-color-rgb), .15);
+    --bs-navbar-toggler-border-radius: var(--bs-border-radius);
+    --bs-navbar-toggler-focus-width: .25rem;
+    --bs-navbar-toggler-transition: box-shadow .15s ease-in-out;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--bs-navbar-padding-y) var(--bs-navbar-padding-x)
+}
+
+.content{
+  display: flex;               /* активируем flexbox */
+  flex-wrap: wrap;             /* элементы переходят на новую строку */
+  justify-content: center;     /* выравниваем все элементы по центру */
+  gap: 20px;                   /* расстояние между элементами */
+  padding: 10px;
+  /* width: 60%;                  или задайте нужную ширину */
+  margin: 0 auto;              /* дополнительно центрируем контейнер, если нужно */
+  background: rgba(245, 248, 250, 1);
+  padding-right: 110px;
+  text-align: left;
+}
+
+.grid{
+  display: flex;               /* активируем flexbox */
+  justify-content: left;     /* выравниваем все элементы по центру */
+  gap: 20px;                   /* расстояние между элементами */
+  padding: 10px;
+  width: 50%;                  /* или задайте нужную ширину */
+  margin: 0 auto;              /* дополнительно центрируем контейнер, если нужно */
+}
+
+.number{
+  position: relative;
+  top: -60px;
+  padding-right: 10px;
+  left: -90px;
+}
+
+.background{
+  position: absolute; left: 60px; top: 0px;
+}
+
+.list{
+  display: contents;
+  width: 104px;
+  height: 88px;
+  /* padding: 104px; */
+}
+
+.search{
+  background: #C7EAFF;
+  /* background-image: url("../images/magnifier.svg"); */
+  background-position-x: 1200px;
+  position: relative;
+  right: -45px;
+  border-radius: 6px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 2px;
+
+  /* Поиск кнопка */
+  width: 55.81px;
+  height: 40px;
+  /* Автолейаут */
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: undefined;
+  padding: 8px 16px 8px 16px;
+
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px 0px rgba(16, 24, 64, 0.08);
+  background: rgba(170, 195, 210, 1);
+
+  height: 29px;
+  width: 44px;
+  padding-top: unset;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 0px;
+}
+
+.search:hover{
+  border-color:blue;
+}
+
+.requests{
+  position: absolute;
+  right: 5px;
+  width: 42px;
+  height: 49px;
+}
+
+.circle {
+  position: relative; right: 31px; top: 25px;
+  height: 22px;
+  width: 22px;
+  background-color: #000000;
+  border-radius: 50%;
+  display: inline-block;
+  text-align: left;
+}
+
+.requests_number{
+  position: relative;
+  right: -7px;
+  top: 0px;
+  color: #ffffff;
+}
+
+.block{
+  content: "";
+  clear: both;
+  display: inline-block;
+  padding: 10px;
+  border: 1px solid;
+  border-color: #D9D9D9;
+  border-radius: 10px;
+  margin: 10px;
+  width: 492px;
+  background: white;
+}
+
+.desc{
+  content: "";
+  clear: both;
+  display: block;
+  overflow: hidden;
+  /* white-space: nowrap; */
+  text-overflow: ellipsis;
+  width: 50%;
+  position: relative;
+  top: -125px;
+  right: -170px;
+  color: #757575;
+
+  color: rgba(65, 84, 99, 1);
+
+  font-family: PT Sans Caption;
+  /* font-size: 18px; */
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0px;
+  text-align: left;
+}
+
+.title{
+  position: absolute;
+  content: "";
+  clear: both;
+  display: ruby;
+  color: #1E1E1E;
+  font-weight: 600;
+  max-width: 360px;
+
+  color: rgba(65, 179, 223, 1);
+
+  font-family: PT Sans Caption;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0px;
+  text-align: left;
+}
+
+.icon{
+  width: 78px;
+  height: 74px;
+}
+
+.image{
+  height: 160px;
+  width: 160px;
+}
+
+.bigtitle{
+  position: relative;
+  right: -30px;
+  color: rgba(51, 62, 102, 1);
+  font-family: PT Sans Caption;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 47px;
+  letter-spacing: 0px;
+  text-align: left;
+  
+  display: flex;               /* активируем flexbox */
+  flex-wrap: wrap;             /* элементы переходят на новую строку */
+  justify-content: left;     /* выравниваем все элементы по центру */
+  gap: 20px;                   /* расстояние между элементами */
+  padding: 10px;
+  width: 50%;                  /* или задайте нужную ширину */
+  margin: 0 auto;              /* дополнительно центрируем контейнер, если нужно */
+}
+
+.bigdesc{
+  position: relative;
+  color: #757575;
+  right: -30px;
+}
+
+.text-input{
+  position: relative;
+  right: -12px;
+
+  
+  color: var(--Neutral / N800, rgba(71, 77, 102, 1));
+
+  font-family: PT Sans Caption;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0px;
+  text-align: left;
+}
+
+.text-master{
+  position: relative;
+  right: -900px;
+  top: -100px;
+}
+
+.text-load{
+  position: relative;
+  right: -724px;
+  top: -50px;
+}
+
+.Deeper{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -185px;
+  top: -90px;
+}
+
+.Delete{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -35px;
+  top: 10px;
+}
+
+.Adder{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -35px;
+  top: 0px;
+}
+
+.AdderRouter{
+  border-radius: 4px;
+  border-color: #767676;
+  border-width: 1px;
+  padding: 6px;
+  position: relative;
+  right: -550px;
+  top: -10px;
+}
+
+.Deeper:hover{
+  border-color: blue;
+}
+
+.block-deep{
+  content: "";
+  clear: both;
+  display: inline-block;
+  padding: 10px;
+  border: 1px solid;
+  border-color: #D9D9D9;
+  border-radius: 10px;
+  margin: 10px;
+  width: 80%;
+  text-align: left;
+  
+
+  background: white;
+  /* background: linear-gradient(
+    to right,
+    rgba(245,248,250,1) 0%,
+    rgba(245,248,250,1) 1%,   /* ширина левого «крыла» 15% 
+    #ffffff 1%,              /* от 15% до 85% — белый центр 
+    #ffffff 99%,
+    rgba(245,248,250,1) 99%,
+    rgba(245,248,250,1) 100%   /* правое «крыло» 15% 
+  ); */
+}
+
+.desc-deep{
+  content: "";
+  clear: both;
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 100%;
+  position: relative;
+  top: -125px;
+  right: -245px;
+  color: #757575;
+  max-width: 640px;
+}
+
+.desc-deep-rev{
+  content: "";
+  clear: both;
+  display: flex;
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+  width: 70%;
+  position: relative;
+  top: -125px;
+  right: -245px;
+  color: #757575;
+}
+
+.Link{
+
+}
+
+.TreeRender{
+  width: max-content;
+}

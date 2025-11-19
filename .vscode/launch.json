@@ -11,6 +11,19 @@
 			"justMyCode": true
 		},
 		{
+			"name": "Run React (Vite)",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": [
+				"run",
+				"dev"
+     		],
+			"cwd": "${workspaceFolder}\\React\\my-app",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen"
+		},
+		{
 			"type": "chrome",
 			"request": "launch",
 			"name": "no CORS",
