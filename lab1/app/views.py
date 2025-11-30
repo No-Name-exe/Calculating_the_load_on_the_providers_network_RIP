@@ -456,8 +456,9 @@ def PutComplete(request: Request, id, format=None):
 @api_view(['PUT'])
 @permission_classes([IsManager])
 def PutModerator(request: Request, id, format=None):
-	# if not check_user_permission(request):
-	# 	return Response({"detail": "Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
+	if not check_user_permission(request):
+		return Response({"detail": "Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
+
 	if not request.user.is_staff or not request.user.is_superuser:
 		print(request.user)
 		print(request.user.is_staff)
@@ -660,13 +661,13 @@ def check_user_permission(request):
 	ssid = request.COOKIES.get("session_id")
 	if not ssid:
 		return False  # Нет cookie — доступ запрещён
-	username = session_storage.get(ssid)
-	print(username)
+	username = session_storage.get(ssid).decode('utf-8')
+	print('проверка redis ', username)
 	if not username:
 		return False
 	try:
 		user = User.objects.get(username=username)
-		print(user)
+		print('проверка user ', user)
 	except:
 		return False
 	if not user.is_staff:
