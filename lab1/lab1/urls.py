@@ -15,7 +15,7 @@ Including another URLconf
 	2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from app import views
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -82,7 +82,7 @@ urlpatterns = [
 	path('api/', include([
 		path('Routers/', include([
 			path('<int:id>/', views.GetRouter, name='api_Routers_get_url'),# GET одна запись
-			path('filter/<str:search>/', views.GetFilter, name='api_Routers_filter_url'),# GET список с фильтрацией
+			re_path(r'^filter/(?P<search>.*)/$', views.GetFilter, name='api_Routers_filter_url'),# GET список с фильтрацией
 			path('add/', views.PostRouter, name='api_Routers_add_url'),# POST добавление (без изображения)
 			path('put/<int:id>/', views.PutRouter, name='api_Routers_put_url'),# PUT изменение
 			path('delete/<int:id>/', views.DeleteRouter, name='api_Routers_delete_url'),# DELETE удаление. Удаление изображения встроено в метод удаления услуги

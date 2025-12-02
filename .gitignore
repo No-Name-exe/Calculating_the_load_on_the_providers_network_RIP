@@ -7,3 +7,4 @@ lab1/app/migrations/__pycache__/**
 lab1/app/migrations/__pycache__/
 .venv/Lib/site-packages/__pycache__/**
 **/__pycache__/**
+keys/*

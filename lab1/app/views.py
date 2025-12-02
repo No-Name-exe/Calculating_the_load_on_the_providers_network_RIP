@@ -243,7 +243,10 @@ def GetRouter(request: Request, id, format=None):
 @swagger_auto_schema(method='get', responses={ 200: RouterSerializer})
 @api_view(['GET'])
 def GetFilter(request: Request, search, format=None):
-	Router_list = Router.objects.filter(title__startswith=search)
+	if search =="":
+		Router_list = Router.objects.all()
+	else:
+		Router_list = Router.objects.filter(title__startswith=search)
 	serializer = RouterSerializer(Router_list, many=True)
 	return Response(serializer.data)
 @swagger_auto_schema(method='post', request_body=RouterPUTSerializer, responses={ 201: RouterPUTSerializer, 400: 'Ошибка валидации' })
