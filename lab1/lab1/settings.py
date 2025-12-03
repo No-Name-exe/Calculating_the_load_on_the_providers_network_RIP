@@ -25,9 +25,25 @@ SECRET_KEY = 'django-insecure-(d7rb4_l0fl23=6465arm^^xpeg-kdkvnh-!hre*q@npg36z9_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-MyServerAdress = '192.168.1.52'
+MyServerAdress = '192.168.1.56'
 
 ALLOWED_HOSTS = ['*']
+
+CORS_ALLOWED_ORIGINS = [
+    "https://no-name-exe.github.io",
+]
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "OPTIONS",
+]
+
+CORS_ALLOW_HEADERS = [
+    '*'
+]
 
 
 # Application definition
@@ -43,6 +59,7 @@ INSTALLED_APPS = [
 	'rest_framework',
 	'rest_framework.authtoken',
     'drf_yasg',
+	'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+	'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'lab1.urls'
