@@ -29,6 +29,10 @@ from .permissions import *
 from rest_framework.request import Request
 from django.http import HttpResponse, HttpRequest
 
+import threading;
+import requests;
+import json;
+
 # Database={}
 # Database["data"]={
 # 		'routers': [
@@ -72,6 +76,10 @@ from django.http import HttpResponse, HttpRequest
 defaul_application_id=3
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+
+# Константа для асинхронного сервиса
+ASYNC_SERVICE_URL = "http://localhost:9000/calculate-router-load"
+ASYNC_SERVICE_TOKEN = "async_secret_token_2025"
 
 def GetRouters(request: HttpRequest, application_routers_id=defaul_application_id):
 
@@ -460,6 +468,7 @@ def PutComplete(request: Request, id, format=None):
 @api_view(['PUT'])
 @permission_classes([IsManager])
 def PutModerator(request: Request, id, format=None):
+	print(request.data)
 	if not check_user_permission(request):
 		return Response({"detail": "Доступ запрещён."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -474,7 +483,7 @@ def PutModerator(request: Request, id, format=None):
 	except ApplicationRouter.DoesNotExist:
 		return Response({"Нет такой заявки."}, status=status.HTTP_404_NOT_FOUND)
 	
-	if not App_instance.status==ApplicationRouter.Status.FORMULATED:
+	if not App_instance.status == ApplicationRouter.Status.FORMULATED:
 		return Response({"Нет прав."}, status=status.HTTP_403_FORBIDDEN)
 	
 	if not isinstance(request.data, dict):
@@ -482,42 +491,46 @@ def PutModerator(request: Request, id, format=None):
 		pass
 	else:
 		update_data = {}
-		if request.data.get("status" ) == ApplicationRouter.Status.COMPLETED:
+		if request.data.get("status") == ApplicationRouter.Status.COMPLETED:
 			update_data["status"] = ApplicationRouter.Status.COMPLETED
 			update_data["date_end"] = datetime.now().date()
 			update_data["moderator"] = user(request)
+			
 			serializer = AppSerializer(App_instance, data=update_data, partial=True)
 			if serializer.is_valid():
 				serializer.save()
-				Router_list = AddedRouter.objects.filter(id_application=App_instance)
+				
+				# Получаем все роутеры в заявке
+				router_list = AddedRouter.objects.filter(id_application=App_instance)
 				total_users = App_instance.TotalUsers
-				routers_with_load = []
-				routers_without_load = []
-				sum_existing_load = 0
 				
-				for router in Router_list:
-					if router.router_load is not None:
-						routers_with_load.append(router)
-						sum_existing_load += router.router_load
-					else:
-						routers_without_load.append(router)
+				# Подготавливаем данные для асинхронного сервиса
+				routers_data = []
+				for router in router_list:
+					routers_data.append({
+						"id": router.id,
+						"master_id": router.master_router_id.id if router.master_router_id else None,
+						"current_load": router.router_load if router.router_load else 0
+					})
 				
-				# Если есть роутеры без нагрузки, распределяем нагрузку
-				if routers_without_load:
-					if sum_existing_load <= total_users:
-						remaining_users = total_users - sum_existing_load
-						if remaining_users > 0:
-							load_per_router = round(remaining_users / len(routers_without_load))
-							for router in routers_without_load:
-								router.router_load = load_per_router
-								router.save()
-						elif remaining_users == 0 or remaining_users < 0:
-							for router in routers_without_load:
-								router.router_load = 0
-								router.save()
-				return Response(status=status.HTTP_201_CREATED)
+				# Запускаем асинхронный расчет
+				thread = threading.Thread(
+					target=trigger_async_calculation,
+					args=(App_instance.id, total_users, routers_data)
+				)
+				thread.daemon = True
+				thread.start()
+				
+				return Response({
+					"status": "Заявка завершена",
+					"message": "Расчет нагрузки роутеров запущен в асинхронном режиме",
+					"application_id": App_instance.id,
+					"async_calculation": True
+				}, status=status.HTTP_201_CREATED)
+				
 			return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-		elif request.data.get("status" ) == ApplicationRouter.Status.REJECTED:
+			
+		elif request.data.get("status") == ApplicationRouter.Status.REJECTED:
 			update_data["status"] = ApplicationRouter.Status.REJECTED
 			update_data["date_end"] = datetime.now().date()
 			update_data["moderator"] = user(request)
@@ -526,6 +539,7 @@ def PutModerator(request: Request, id, format=None):
 				serializer.save()
 				return Response(status=status.HTTP_201_CREATED)
 			return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+			
 	return Response(status=status.HTTP_400_BAD_REQUEST)
 @swagger_auto_schema(method='delete', responses={ 204: '', 400: 'Ошибка валидации', 404: 'Нет такой заявки', 403: 'Нет прав' })
 @api_view(['DELETE'])
@@ -569,6 +583,46 @@ def DeleteAdded(request: Request, id, format=None):
 @swagger_auto_schema(method='put', request_body=AddedPUTSerializer, responses={ 201: AddedPUTSerializer, 400: 'Ошибка валидации', 404: 'AddedRouter не найден', 404: 'ApplicationRouter не найден' })
 @api_view(['PUT'])
 def PutAdded(request: Request, id, format=None):
+		# Проверяем, не является ли это запросом от асинхронного сервиса
+	if check_async_token(request):
+		# Если это асинхронный сервис, пропускаем проверку пользователя
+		try:
+			router = AddedRouter.objects.get(id=id)
+		except AddedRouter.DoesNotExist:
+			return Response({"error": "AddedRouter не найден"}, status=status.HTTP_404_NOT_FOUND)
+		
+		serializer = AddedPUTSerializer(router, data=request.data, partial=True)
+		if serializer.is_valid():
+			serializer.save()
+			
+			# Обновляем поле date_modific в родительской заявке
+			if router.id_application:
+				app = router.id_application
+				app.date_modific = datetime.now().date()
+				app.save(update_fields=['date_modific'])
+			
+			return Response(serializer.data)
+		# Проверяем, не является ли это запросом от асинхронного сервиса
+	if check_async_token(request):
+		# Если это асинхронный сервис, пропускаем проверку пользователя
+		try:
+			router = AddedRouter.objects.get(id=id)
+		except AddedRouter.DoesNotExist:
+			return Response({"error": "AddedRouter не найден"}, status=status.HTTP_404_NOT_FOUND)
+		
+		serializer = AddedPUTSerializer(router, data=request.data, partial=True)
+		if serializer.is_valid():
+			serializer.save()
+			
+			# Обновляем поле date_modific в родительской заявке
+			if router.id_application:
+				app = router.id_application
+				app.date_modific = datetime.now().date()
+				app.save(update_fields=['date_modific'])
+			
+			return Response(serializer.data)
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+	
 	App_instance = FindUserDraftApplication(user(request))
 	if not App_instance:
 		return Response({"error": "AddedRouter не найден"}, status=status.HTTP_404_NOT_FOUND)
@@ -697,3 +751,56 @@ def check_user_permission(request):
 	if not user.is_staff:
 		return False
 	return True
+
+# Создаем функцию для вызова асинхронного сервиса
+def trigger_async_calculation(app_id, total_users, routers_data):
+	"""
+	Запускает асинхронный расчет нагрузки роутеров
+	"""
+
+	BASE_URL = "http://localhost:8080"
+
+	try:
+		payload = {
+			"application_id": app_id,
+			"total_users": total_users,
+			"routers": routers_data,
+			"auth_token": ASYNC_SERVICE_TOKEN,
+			"callback_url": f"{BASE_URL}/api/AddedRouters/change/"  # Базовый URL
+		}
+		
+		# Отправляем запрос в асинхронный сервис
+		response = requests.post(
+			ASYNC_SERVICE_URL,
+			json=payload,
+			timeout=30
+		)
+		
+		if response.status_code == 200:
+			print(f"Async calculation started for application {app_id}")
+			return True
+		else:
+			print(f"Failed to start async service: {response.status_code}")
+			return False
+			
+	except Exception as e:
+		print(f"Error calling async service: {e}")
+		return False
+
+# Добавляем middleware для проверки токена асинхронного сервиса
+def check_async_token(request):
+	"""
+	Проверяет токен от асинхронного сервиса
+	"""
+	# Проверяем токен в заголовке
+	token = request.headers.get('X-Async-Service-Token')
+	if token and token == ASYNC_SERVICE_TOKEN:
+		return True
+	
+	# Проверяем токен в данных (если это POST/PUT)
+	if request.method in ['POST', 'PUT']:
+		token = request.data.get('async_token', None)
+		if token and token == ASYNC_SERVICE_TOKEN:
+			return True
+	
+	return False

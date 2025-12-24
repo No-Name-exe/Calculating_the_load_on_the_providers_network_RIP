@@ -55,13 +55,29 @@ class AppSerializer(serializers.ModelSerializer):
 	# вложенный сериализатор
 	creator = serializers.SlugRelatedField(read_only=True, slug_field='username')
 	moderator = serializers.SlugRelatedField(read_only=True, slug_field='username')
+	calculated_routers_count = serializers.SerializerMethodField()
+	total_routers_count = serializers.SerializerMethodField()
 
 	class Meta:
 		# Модель, которую мы сериализуем
 		model = ApplicationRouter
 
 		# Поля, которые мы сериализуем
-		fields = ["id", "creator", "moderator", "status", "date_create", "date_modific", "date_end", "Adress", "TotalUsers"]
+		fields = ["id", "creator", "moderator", "status", "date_create", "date_modific", "date_end", "Adress", "TotalUsers", 'calculated_routers_count', 'total_routers_count']
+	
+	def get_calculated_routers_count(self, obj):
+		"""
+		Возвращает количество роутеров с рассчитанной нагрузкой
+		"""
+		return AddedRouter.objects.filter(
+			id_application=obj,
+			router_load__isnull=False
+		).count()
+	def get_total_routers_count(self, obj):
+		"""
+		Возвращает общее количество роутеров в заявке
+		"""
+		return AddedRouter.objects.filter(id_application=obj).count()
 
 class AppPUTSerializer(serializers.ModelSerializer):
 	class Meta:
