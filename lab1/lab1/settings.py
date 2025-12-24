@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-(d7rb4_l0fl23=6465arm^^xpeg-kdkvnh-!hre*q@npg36z9_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-MyServerAdress = '192.168.1.56'
+MyServerAdress = '192.168.1.11'
 
 ALLOWED_HOSTS = ['*']
 

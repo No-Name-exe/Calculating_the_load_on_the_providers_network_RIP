@@ -353,6 +353,7 @@ def GetIcons(request: Request, format=None):
 	App_instance = ApplicationRouter.objects.filter(creator=user(request), status=ApplicationRouter.Status.DRAFT).first()
 	if not App_instance:
 		print("ApplicationRouter вернул None")
+		return Response({"detail": "Не найдено черновика для текущего пользователя", "error_code": "NO_DRAFT_FOUND"},status=status.HTTP_404_NOT_FOUND)
 	else:
 		# serializer = RouterSerializer(App_instance)
 		routers_count=AddedRouter.objects.filter(id_application=App_instance).count()
@@ -489,14 +490,31 @@ def PutModerator(request: Request, id, format=None):
 			if serializer.is_valid():
 				serializer.save()
 				Router_list = AddedRouter.objects.filter(id_application=App_instance)
-				SumLoadCheck: int = 0
-				for RouterSelect in Router_list:
-					if RouterSelect.router_load is not None:
-						SumLoadCheck+=RouterSelect.router_load
-				for RouterSelect in Router_list:
-					if RouterSelect.router_load is None or RouterSelect.router_load == '':
-						RouterSelect.router_load=CalculateLoad(Router_list.count(), SumLoadCheck)
-						RouterSelect.save()
+				total_users = App_instance.TotalUsers
+				routers_with_load = []
+				routers_without_load = []
+				sum_existing_load = 0
+				
+				for router in Router_list:
+					if router.router_load is not None:
+						routers_with_load.append(router)
+						sum_existing_load += router.router_load
+					else:
+						routers_without_load.append(router)
+				
+				# Если есть роутеры без нагрузки, распределяем нагрузку
+				if routers_without_load:
+					if sum_existing_load <= total_users:
+						remaining_users = total_users - sum_existing_load
+						if remaining_users > 0:
+							load_per_router = round(remaining_users / len(routers_without_load))
+							for router in routers_without_load:
+								router.router_load = load_per_router
+								router.save()
+						elif remaining_users == 0 or remaining_users < 0:
+							for router in routers_without_load:
+								router.router_load = 0
+								router.save()
 				return Response(status=status.HTTP_201_CREATED)
 			return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 		elif request.data.get("status" ) == ApplicationRouter.Status.REJECTED:
@@ -637,8 +655,10 @@ def user(request):
 	try:
 		# user1 = User.objects.get(id=1)
 		ssid = request.COOKIES.get("session_id")
-		username = session_storage.get(ssid)
-		user1 = username
+		username = session_storage.get(ssid).decode('utf-8')
+		print('Полченный из Cookie username: ', username)
+		user1 = User.objects.get(username=username)
+		print(user1)
 	except:
 		user1 = request.user
 		pass
@@ -650,6 +670,7 @@ def FindUserDraftApplication(UserFind):
 		FoundApplication: ApplicationRouter = result 
 	else:
 		print('Ничего не найдено')
+		return None
 		pass
 	return FoundApplication
 

@@ -96,7 +96,7 @@ class AddedForAppSerializer(serializers.ModelSerializer):
 		# Модель, которую мы сериализуем
 		model = AddedRouter
 		# Поля, которые мы сериализуем
-		fields = ["id_router", "master_router_id", "router_load", "Router"]
+		fields = ["id", "id_router", "master_router_id", "router_load", "Router"]
 
 	def get_Router(self, obj):
 		# Получаем все объекты AddedRouter, связанные с текущей заявкой
