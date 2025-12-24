@@ -7,7 +7,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
 		# Модель, которую мы сериализуем
 		model = User
 		# Поля, которые мы сериализуем
-		fields = ['id', 'username', 'first_name', 'last_name', 'email']
+		fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_staff']
 
 class UserRegisterSerializer(serializers.ModelSerializer):
 	password = serializers.CharField(write_only=True)
