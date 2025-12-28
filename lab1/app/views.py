@@ -465,6 +465,7 @@ def PutComplete(request: Request, id, format=None):
 		return Response(status=status.HTTP_201_CREATED)
 	return Response(status=status.HTTP_400_BAD_REQUEST)
 @csrf_exempt
+@swagger_auto_schema( method='put', request_body=openapi.Schema( type=openapi.TYPE_OBJECT, properties={ 'status': openapi.Schema( type=openapi.TYPE_STRING, enum=['завершён', 'отклонён'], description='Статус заявки' ) }, required=['status'] ), responses={ 201: openapi.Response('Заявка обновлена'), 400: 'Ошибка валидации', 403: 'Доступ запрещен', 404: 'Заявка не найдена' } )
 @api_view(['PUT'])
 @permission_classes([IsManager])
 def PutModerator(request: Request, id, format=None):
